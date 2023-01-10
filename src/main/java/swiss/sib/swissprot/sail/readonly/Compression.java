@@ -367,7 +367,7 @@ public enum Compression {
 	}
 
 	public static abstract class CompressionTask<T> {
-		protected T input;
+		protected final T input;
 		private volatile boolean inprogres;
 		private volatile byte[] output;
 		private volatile IOException e;
@@ -391,7 +391,6 @@ public enum Compression {
 				this.e = e.getCause();
 			}
 			inprogres = false;
-			input = null;
 		}
 
 		protected abstract byte[] compressAction();
@@ -418,7 +417,7 @@ public enum Compression {
 		}
 	}
 
-	static final class Lz4FrameCompressionTask extends CompressionTask<byte[]> {
+	private static final class Lz4FrameCompressionTask extends CompressionTask<byte[]> {
 
 		public Lz4FrameCompressionTask(byte[] input) {
 			super(input);
