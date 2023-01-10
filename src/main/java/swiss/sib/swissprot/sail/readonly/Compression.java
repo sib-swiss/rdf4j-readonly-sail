@@ -367,9 +367,9 @@ public enum Compression {
 	}
 
 	public static abstract class CompressionTask<T> {
-		protected final T input;
+		protected T input;
 		private volatile boolean inprogres;
-		private volatile byte[] output;
+		protected volatile byte[] output;
 		private volatile IOException e;
 
 		public CompressionTask(T input) {
@@ -386,14 +386,15 @@ public enum Compression {
 		private void compress() {
 			inprogres = true;
 			try {
-				output = compressAction();
+				output = compressAction(input);
 			} catch (UncheckedIOException e) {
 				this.e = e.getCause();
 			}
+			input = null;
 			inprogres = false;
 		}
 
-		protected abstract byte[] compressAction();
+		protected abstract byte[] compressAction(T input);
 
 		public static void writeCompressionTask(CompressionTask<?> ct, OutputStream wrapped) throws IOException {
 
@@ -424,8 +425,12 @@ public enum Compression {
 		}
 
 		@Override
-		protected byte[] compressAction() {
+		protected byte[] compressAction(byte[] input) {
 			try {
+				//if input is null we have either already run, so we can return the output that we have
+				//already stored.
+				if (input == null)
+					return output;
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				try (LZ4FrameOutputStream lz4FrameOutputStream = new LZ4FrameOutputStream(baos, BLOCKSIZE.SIZE_4MB,
 						input.length, FLG.Bits.BLOCK_INDEPENDENCE, FLG.Bits.CONTENT_SIZE)) {

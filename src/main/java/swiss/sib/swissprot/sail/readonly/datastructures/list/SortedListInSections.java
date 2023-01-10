@@ -107,8 +107,10 @@ public class SortedListInSections<T> implements SortedList<T> {
 		}
 
 		@Override
-		public byte[] compressAction() {
+		public byte[] compressAction(List<byte[]> input) {
 			try {
+				if (input == null)
+					return output;
 				return LZ4Section.compress(input);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
