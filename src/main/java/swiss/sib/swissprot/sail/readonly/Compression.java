@@ -92,7 +92,7 @@ public enum Compression {
 		 */
 		static final class MultiFrameCompressor extends OutputStream {
 			private static final int MAX_QUEUED_COMPRESSION_TASKS = 16;
-			private static final int BUFFER_SIZE = 32 * 1024;
+			private static final int BUFFER_SIZE = 4 * 1024 * 1024;
 			private byte[] buffer = new byte[BUFFER_SIZE];
 			private final Deque<CompressionTask<byte[]>> cts = new ArrayDeque<>();
 			private int offset = 0;
