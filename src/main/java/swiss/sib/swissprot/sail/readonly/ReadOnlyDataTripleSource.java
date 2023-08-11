@@ -20,7 +20,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 
 import swiss.sib.swissprot.sail.readonly.datastructures.Triples;
@@ -39,7 +38,7 @@ public class ReadOnlyDataTripleSource implements TripleSource {
 	}
 
 	@Override
-	public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(Resource subject,
+	public CloseableIteration<? extends Statement> getStatements(Resource subject,
 			IRI predicate, Value object, Resource... contexts) {
 
 		List<Triples> triples = store.getTriples(predicate);
@@ -55,26 +54,26 @@ public class ReadOnlyDataTripleSource implements TripleSource {
 					.iterator();
 
 			Iterator<Statement> multiOrderedIterator = Iterators.concat(collect);
-			return new CloseableIteration<Statement, QueryEvaluationException>() {
+			return new CloseableIteration<Statement>() {
 
 				@Override
-				public boolean hasNext() throws QueryEvaluationException {
+				public boolean hasNext() {
 					return multiOrderedIterator.hasNext();
 				}
 
 				@Override
-				public Statement next() throws QueryEvaluationException {
+				public Statement next() {
 					return multiOrderedIterator.next();
 				}
 
 				@Override
-				public void remove() throws QueryEvaluationException {
+				public void remove() {
 					// TODO Auto-generated method stub
 
 				}
 
 				@Override
-				public void close() throws QueryEvaluationException {
+				public void close() {
 					// TODO Auto-generated method stub
 
 				}
@@ -83,7 +82,7 @@ public class ReadOnlyDataTripleSource implements TripleSource {
 		}
 	}
 
-	public CloseableIteration<? extends Statement, QueryEvaluationException> getStatementsInOrder(Resource subject,
+	public CloseableIteration<? extends Statement> getStatementsInOrder(Resource subject,
 			IRI predicate, Value object, Resource... contexts) {
 
 		List<Triples> triples = store.getTriples(predicate);
@@ -99,26 +98,26 @@ public class ReadOnlyDataTripleSource implements TripleSource {
 					.collect(Collectors.toList());
 			Iterator<Statement> multiOrderedIterator = Iterators.mergeSorted(ReadOnlyDataTripleSource::compareStatement,
 					collect);
-			return new CloseableIteration<Statement, QueryEvaluationException>() {
+			return new CloseableIteration<Statement>() {
 
 				@Override
-				public boolean hasNext() throws QueryEvaluationException {
+				public boolean hasNext() {
 					return multiOrderedIterator.hasNext();
 				}
 
 				@Override
-				public Statement next() throws QueryEvaluationException {
+				public Statement next() {
 					return multiOrderedIterator.next();
 				}
 
 				@Override
-				public void remove() throws QueryEvaluationException {
+				public void remove() {
 					// TODO Auto-generated method stub
 
 				}
 
 				@Override
-				public void close() throws QueryEvaluationException {
+				public void close() {
 					// TODO Auto-generated method stub
 
 				}

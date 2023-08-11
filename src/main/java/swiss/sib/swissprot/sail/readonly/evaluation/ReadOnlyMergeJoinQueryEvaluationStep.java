@@ -20,7 +20,6 @@ import java.util.function.Predicate;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.EmptyIteration;
 import org.eclipse.rdf4j.common.iteration.FilterIteration;
-import org.eclipse.rdf4j.common.iteration.Iteration;
 import org.eclipse.rdf4j.common.iteration.LookAheadIteration;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -114,15 +113,15 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 	}
 
 	@Override
-	public CloseableIteration<BindingSet, QueryEvaluationException> evaluate(BindingSet bindings) {
+	public CloseableIteration<BindingSet> evaluate(BindingSet bindings) {
 		if (unboundTest.test(bindings)) {
 //		// the variable must remain unbound for this solution see
 //		// https://www.w3.org/TR/sparql11-query/#assignment
 			return new EmptyIteration<>();
 		}
-		CloseableIteration<? extends Statement, QueryEvaluationException> leftIter = statementIterator(left,
+		CloseableIteration<? extends Statement> leftIter = statementIterator(left,
 				filterLeftForSameVariables);
-		CloseableIteration<? extends Statement, QueryEvaluationException> rightIter = statementIterator(right,
+		CloseableIteration<? extends Statement> rightIter = statementIterator(right,
 				filterRightForSameVariables);
 //
 		if (!leftIter.hasNext() || !rightIter.hasNext()) {
@@ -136,7 +135,7 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 				private BindingSet current;
 
 				@Override
-				protected BindingSet getNextElement() throws QueryEvaluationException {
+				protected BindingSet getNextElement() {
 					if (current != null) {
 						BindingSet ne = current;
 						current = null;
@@ -208,9 +207,9 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 		return fil;
 	}
 
-	private CloseableIteration<? extends Statement, QueryEvaluationException> statementIterator(StatementPattern sp,
+	private CloseableIteration<? extends Statement> statementIterator(StatementPattern sp,
 			Predicate<Statement> filter) {
-		CloseableIteration<? extends Statement, QueryEvaluationException> raw = getStatements(
+		CloseableIteration<? extends Statement> raw = getStatements(
 				(ReadOnlyDataTripleSource) tripleSource, sp.getSubjectVar(), sp.getPredicateVar(), sp.getObjectVar(),
 				sp.getContextVar());
 		if (filter == null)
@@ -275,9 +274,9 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 	}
 
 	private static final class PreSortedMergingIterationImplementation
-			implements CloseableIteration<BindingSet, QueryEvaluationException> {
-		private final CloseableIteration<? extends Statement, QueryEvaluationException> rightIter;
-		private final CloseableIteration<? extends Statement, QueryEvaluationException> leftIter;
+			implements CloseableIteration<BindingSet> {
+		private final CloseableIteration<? extends Statement> rightIter;
+		private final CloseableIteration<? extends Statement> leftIter;
 		private Statement left;
 		private Statement right;
 		private static final Comparator<Value> comp = new ReadOnlyValueComparator();
@@ -287,8 +286,8 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 
 		private PreSortedMergingIterationImplementation(
 
-				CloseableIteration<? extends Statement, QueryEvaluationException> leftIter,
-				CloseableIteration<? extends Statement, QueryEvaluationException> rightIter,
+				CloseableIteration<? extends Statement> leftIter,
+				CloseableIteration<? extends Statement> rightIter,
 				BiFunction<BindingSet, List<Statement>, BindingSet> bindingMaker,
 				BiPredicate<Statement, Statement> filterSameVariables, BindingSet bindings) {
 			this.rightIter = rightIter;
@@ -354,7 +353,7 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 		}
 	}
 
-	private CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(
+	private CloseableIteration<? extends Statement> getStatements(
 			ReadOnlyDataTripleSource tripleSource, Var subjectVar, Var predicateVar, Var objectVar, Var contextVar) {
 		Resource subject = null;
 		if (subjectVar != null && subjectVar.isConstant() && subjectVar instanceof IRI) {
@@ -380,10 +379,10 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 		return tripleSource.getStatements(subject, predicate, object, context);
 	}
 
-	private final class FilterByPredicateIteration extends FilterIteration<Statement, QueryEvaluationException> {
+	private final class FilterByPredicateIteration extends FilterIteration<Statement> {
 		private final Predicate<Statement> filterLeftForSameVariables;
 
-		private FilterByPredicateIteration(Iteration<? extends Statement, ? extends QueryEvaluationException> iter,
+		private FilterByPredicateIteration(CloseableIteration<? extends Statement> iter,
 				Predicate<Statement> filterLeftForSameVariables) {
 			super(iter);
 			this.filterLeftForSameVariables = filterLeftForSameVariables;

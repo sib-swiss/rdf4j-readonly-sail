@@ -43,7 +43,7 @@ public class ReadonlyStoreConnection extends AbstractSailConnection {
 	}
 
 	@Override
-	protected CloseableIteration<? extends BindingSet, QueryEvaluationException> evaluateInternal(TupleExpr tupleExpr,
+	protected CloseableIteration<? extends BindingSet> evaluateInternal(TupleExpr tupleExpr,
 			Dataset dataset, BindingSet bindings, boolean includeInferred) throws SailException {
 
 		try {
@@ -67,18 +67,18 @@ public class ReadonlyStoreConnection extends AbstractSailConnection {
 	}
 
 	@Override
-	protected CloseableIteration<? extends Resource, SailException> getContextIDsInternal() throws SailException {
+	protected CloseableIteration<? extends Resource> getContextIDsInternal() throws SailException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	protected CloseableIteration<? extends Statement, SailException> getStatementsInternal(Resource subj, IRI pred,
+	protected CloseableIteration<? extends Statement> getStatementsInternal(Resource subj, IRI pred,
 			Value obj, boolean includeInferred, Resource... contexts) throws SailException {
 		ReadOnlyDataTripleSource tripleSource = new ReadOnlyDataTripleSource(sail.getValueFactory(), sail);
-		CloseableIteration<? extends Statement, QueryEvaluationException> statements = tripleSource.getStatements(subj,
+		CloseableIteration<? extends Statement> statements = tripleSource.getStatements(subj,
 				pred, obj, contexts);
-		return new CloseableIteration<Statement, SailException>() {
+		return new CloseableIteration<Statement>() {
 
 			@Override
 			public boolean hasNext() throws SailException {
@@ -146,7 +146,7 @@ public class ReadonlyStoreConnection extends AbstractSailConnection {
 	}
 
 	@Override
-	protected CloseableIteration<? extends Namespace, SailException> getNamespacesInternal() throws SailException {
+	protected CloseableIteration<? extends Namespace> getNamespacesInternal() throws SailException {
 		// TODO Auto-generated method stub
 		return null;
 	}

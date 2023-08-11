@@ -36,7 +36,6 @@ import swiss.sib.swissprot.sail.readonly.datastructures.io.RawIO.IO;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.IterateInSortedOrder;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedList;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedListInSections;
-import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedListInSections.IterateSectionsInSortedOrder;
 
 public class SortedBNodeListTest {
 	private static final SimpleValueFactory VF = SimpleValueFactory.getInstance();

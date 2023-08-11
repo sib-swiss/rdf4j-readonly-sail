@@ -17,9 +17,8 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Triple;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.datatypes.XMLDatatypeUtil;
-import org.eclipse.rdf4j.model.util.Literals;
-import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.algebra.Compare.CompareOp;
 import org.eclipse.rdf4j.query.algebra.evaluation.ValueExprEvaluationException;
 import org.eclipse.rdf4j.query.algebra.evaluation.util.QueryEvaluationUtil;
@@ -154,11 +153,11 @@ public class ReadOnlyValueComparator extends ValueComparator {
 		if (leftDatatype != null) {
 			if (rightDatatype != null) {
 				// Both literals have datatypes
-				Optional<XSD.Datatype> leftXmlDatatype = Literals.getXsdDatatype(leftLit);
-				Optional<XSD.Datatype> rightXmlDatatype = Literals.getXsdDatatype(rightLit);
+				CoreDatatype leftXmlDatatype = leftLit.getCoreDatatype();
+				CoreDatatype rightXmlDatatype = rightLit.getCoreDatatype();
 
-				if (leftXmlDatatype.isPresent() && rightXmlDatatype.isPresent()) {
-					result = compareDatatypes(leftXmlDatatype.get(), rightXmlDatatype.get());
+				if (leftXmlDatatype !=null && rightXmlDatatype !=null) {
+					result = compareDatatypes(leftXmlDatatype, rightXmlDatatype);
 				} else {
 					result = compareDatatypes(leftDatatype, rightDatatype);
 				}
@@ -226,27 +225,33 @@ public class ReadOnlyValueComparator extends ValueComparator {
 		}
 	}
 
-	private int compareDatatypes(XSD.Datatype leftDatatype, XSD.Datatype rightDatatype) {
-		if (leftDatatype.isNumericDatatype()) {
-			if (rightDatatype.isNumericDatatype()) {
-				// both are numeric datatypes
-				return compareURIs(leftDatatype.getIri(), rightDatatype.getIri());
+	private int compareDatatypes(CoreDatatype leftDatatype, CoreDatatype rightDatatype) {
+		if (leftDatatype.isXSDDatatype() && rightDatatype.isXSDDatatype()) {
+			CoreDatatype.XSD left = (CoreDatatype.XSD) leftDatatype;
+			CoreDatatype.XSD right = (CoreDatatype.XSD) rightDatatype;
+			if (left.isNumericDatatype()) {
+				if (right.isNumericDatatype()) {
+					// both are numeric datatypes
+					return compareURIs(leftDatatype.getIri(), rightDatatype.getIri());
+				} else {
+					return -1;
+				}
+			} else if (right.isNumericDatatype()) {
+				return 1;
+			} else if (left.isCalendarDatatype()) {
+				if (right.isCalendarDatatype()) {
+					// both are calendar datatype
+					return compareURIs(leftDatatype.getIri(), rightDatatype.getIri());
+				} else {
+					return -1;
+				}
+			} else if (right.isCalendarDatatype()) {
+				return 1;
 			} else {
-				return -1;
-			}
-		} else if (rightDatatype.isNumericDatatype()) {
-			return 1;
-		} else if (leftDatatype.isCalendarDatatype()) {
-			if (rightDatatype.isCalendarDatatype()) {
-				// both are calendar datatype
+				// incompatible or unordered datatype
 				return compareURIs(leftDatatype.getIri(), rightDatatype.getIri());
-			} else {
-				return -1;
 			}
-		} else if (rightDatatype.isCalendarDatatype()) {
-			return 1;
 		} else {
-			// incompatible or unordered datatype
 			return compareURIs(leftDatatype.getIri(), rightDatatype.getIri());
 		}
 	}

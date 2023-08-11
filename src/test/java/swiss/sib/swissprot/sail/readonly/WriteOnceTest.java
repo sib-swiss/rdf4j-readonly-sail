@@ -46,7 +46,6 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterFactory;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
-import org.eclipse.rdf4j.sail.SailException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -86,7 +85,7 @@ public class WriteOnceTest {
 			assertTrue(Files.isDirectory(newFolder.toPath()));
 		}
 		ReadOnlyStore readOnlyStore = new ReadOnlyStore(newFolder);
-		try (CloseableIteration<? extends Statement, SailException> statements2 = readOnlyStore.getConnection()
+		try (CloseableIteration<? extends Statement> statements2 = readOnlyStore.getConnection()
 				.getStatements(null, RDF.TYPE, null, false)) {
 			// TODO account for literals
 			assertEquals(3, statements2.stream().count());

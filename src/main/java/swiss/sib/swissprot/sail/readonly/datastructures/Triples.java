@@ -26,8 +26,6 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.base.AbstractStatement;
-import org.eclipse.rdf4j.query.QueryEvaluationException;
-import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.extensiblestore.valuefactory.ExtensibleStatement;
 import org.roaringbitmap.longlong.Roaring64Bitmap;
 
@@ -91,7 +89,7 @@ public class Triples {
 		}
 	}
 
-	public CloseableIteration<? extends Statement, QueryEvaluationException> iterate(Resource subject, Value object,
+	public CloseableIteration<? extends Statement> iterate(Resource subject, Value object,
 			Resource[] contexts) {
 		return new LongLongToStatementIteration(plainIterate(subject, object, contexts));
 	}
@@ -120,7 +118,7 @@ public class Triples {
 		return base;
 	}
 
-	CloseableIteration<? extends Statement, QueryEvaluationException> knownSubjectObjectNoGraph(Resource subject,
+	CloseableIteration<? extends Statement> knownSubjectObjectNoGraph(Resource subject,
 			Value object) {
 		long subjectId = subjectToLong.applyAsLong(subject);
 		long objectId = objectToLong.applyAsLong(object);
@@ -211,24 +209,24 @@ public class Triples {
 	}
 
 	private final class LongLongToStatementIteration
-			implements CloseableIteration<Statement, QueryEvaluationException> {
+			implements CloseableIteration<Statement> {
 
 		private final Iterator<KeyValue> kvs;
 
 		@Override
-		public boolean hasNext() throws SailException {
+		public boolean hasNext() {
 			return kvs.hasNext();
 		}
 
 		@Override
-		public Statement next() throws SailException {
+		public Statement next() {
 			KeyValue next = kvs.next();
 
 			return new LongLongStatement(next);
 		}
 
 		@Override
-		public void remove() throws SailException {
+		public void remove() {
 			// TODO Auto-generated method stub
 
 		}
@@ -239,7 +237,7 @@ public class Triples {
 		}
 
 		@Override
-		public void close() throws SailException {
+		public void close() {
 			// TODO Auto-generated method stub
 
 		}
