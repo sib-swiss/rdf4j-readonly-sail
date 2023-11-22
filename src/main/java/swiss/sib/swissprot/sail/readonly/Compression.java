@@ -240,7 +240,7 @@ public enum Compression {
 
 		@Override
 		public ProcessBuilder decompressInExternalProcessBuilder(File f) throws FileNotFoundException, IOException {
-			ProcessBuilder pb = new ProcessBuilder("zstd", "--format=zstd", "-cqdk", "-T0", f.getAbsolutePath());
+			ProcessBuilder pb = new ProcessBuilder("zstd", "-cqdk", "-T0", f.getAbsolutePath());
 			pb.redirectError(Redirect.INHERIT);
 			return pb;
 		}

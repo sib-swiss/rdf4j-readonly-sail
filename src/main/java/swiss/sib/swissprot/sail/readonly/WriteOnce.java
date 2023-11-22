@@ -240,7 +240,10 @@ public class WriteOnce implements AutoCloseable {
 
 	private static void parse(WriteOnce wo, IRI graph, String fileName, Optional<RDFFormat> parserFormatForFileName)
 			throws IOException {
-		ParserConfig pc = new ParserConfig();
+		
+		RDFParser parser = Rio.createParser(parserFormatForFileName.get(), SimpleValueFactory.getInstance());
+	
+		ParserConfig pc = parser.getParserConfig();
 		pc.set(XMLParserSettings.FAIL_ON_DUPLICATE_RDF_ID, false);
 		pc.set(XMLParserSettings.FAIL_ON_INVALID_QNAME, false);
 		pc.set(XMLParserSettings.FAIL_ON_INVALID_NCNAME, false);
@@ -248,7 +251,7 @@ public class WriteOnce implements AutoCloseable {
 		// TODO support rdf-star.
 		pc.set(BasicParserSettings.PROCESS_ENCODED_RDF_STAR, false);
 		pc.setNonFatalErrors(Set.of(XMLParserSettings.FAIL_ON_DUPLICATE_RDF_ID));
-		RDFParser parser = Rio.createParser(parserFormatForFileName.get(), SimpleValueFactory.getInstance(), pc);
+		
 		try {
 			Instant start = Instant.now();
 			logger.info("Starting parsing of " + fileName + " at " + start);

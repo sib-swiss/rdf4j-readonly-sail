@@ -149,6 +149,11 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 					}
 
 				}
+
+				@Override
+				protected void handleClose() {
+					next.close();
+				}
 			};
 		}
 		return next;
@@ -391,6 +396,11 @@ public class ReadOnlyMergeJoinQueryEvaluationStep implements QueryEvaluationStep
 		@Override
 		protected boolean accept(Statement object) throws QueryEvaluationException {
 			return filterLeftForSameVariables.test(object);
+		}
+
+		@Override
+		protected void handleClose() {
+			super.close();
 		}
 	}
 

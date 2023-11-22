@@ -25,6 +25,7 @@ import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runners.Parameterized.Parameter;
 
 public class CompressionTest {
 
@@ -82,7 +83,7 @@ public class CompressionTest {
 			}
 		}
 		try {
-			assertEquals(0, start.waitFor());
+			assertEquals("Compression program should have exit status 0", 0, start.waitFor());
 		} catch (InterruptedException e) {
 			fail();
 		}
@@ -99,7 +100,7 @@ public class CompressionTest {
 			out = is.readAllBytes();
 		}
 		try {
-			assertEquals(0, p.waitFor());
+			assertEquals("Decompression program should have exit status 0", 0, p.waitFor());
 		} catch (InterruptedException e) {
 			fail();
 		}

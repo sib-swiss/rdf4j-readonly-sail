@@ -6,7 +6,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<rdf4j.version>5.0.0-SNAPSHOT</rdf4j.version>
+		<rdf4j.version>5.0.0-M2</rdf4j.version>
 		<slf4j.version>[1.7,)</slf4j.version>
 		<maven.compiler.release>17</maven.compiler.release>
 		<maven.compiler.source>17</maven.compiler.source>
@@ -108,12 +108,12 @@
 		<dependency>
 			<groupId>com.github.luben</groupId>
 			<artifactId>zstd-jni</artifactId>
-			<version>1.5.2-3</version>
+			<version>1.5.5-10</version>
 		</dependency>
 		<dependency>
 			<groupId>org.roaringbitmap</groupId>
 			<artifactId>RoaringBitmap</artifactId>
-			<version>0.9.35</version>
+			<version>1.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>me.lemire.integercompression</groupId>
