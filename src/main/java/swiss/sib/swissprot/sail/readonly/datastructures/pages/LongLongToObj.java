@@ -12,7 +12,7 @@ package swiss.sib.swissprot.sail.readonly.datastructures.pages;
 
 /**
  *
- * @author Jerven Bolleman <jerven.bolleman@sib.swiss>
+ @author <a href="mailto:jerven.bolleman@sib.swiss">Jerven Bolleman</a>
  */
 @FunctionalInterface
 public interface LongLongToObj<T> {

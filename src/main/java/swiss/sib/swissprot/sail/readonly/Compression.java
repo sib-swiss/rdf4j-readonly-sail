@@ -82,13 +82,14 @@ public enum Compression {
 		}
 
 		/**
-		 * This works because frames are allowed to be concatenated. We collect 4 Megabytes of input and compress this
-		 * into one frame with known inputsize;
+		 * This works because frames are allowed to be concatenated. We collect 4
+		 * Megabytes of input and compress this into one frame with known inputsize;
 		 *
-		 * Compression happens in the common fork join pool. But does not depend on this to make progress. If there are
-		 * more than 16 buffered sections in the compression queue we always write out the first one. Either waiting for
-		 * compression task to finish or to do it in it's own thread if the submitted task was not picked up for
-		 * compression in the common pool.
+		 * Compression happens in the common fork join pool. But does not depend on this
+		 * to make progress. If there are more than 16 buffered sections in the
+		 * compression queue we always write out the first one. Either waiting for
+		 * compression task to finish or to do it in it's own thread if the submitted
+		 * task was not picked up for compression in the common pool.
 		 */
 		static final class MultiFrameCompressor extends OutputStream {
 			private static final int MAX_QUEUED_COMPRESSION_TASKS = 16;
@@ -325,6 +326,15 @@ public enum Compression {
 		return extension;
 	}
 
+	public static Compression fromExtension(String extension) {
+		for (Compression c : Compression.values()) {
+			if (c.extension.equals(extension)) {
+				return c;
+			}
+		}
+		return Compression.NONE;
+	}
+
 	public abstract InputStream decompress(File f) throws FileNotFoundException, IOException;
 
 	public abstract OutputStream compress(File f) throws FileNotFoundException, IOException;
@@ -427,8 +437,9 @@ public enum Compression {
 		@Override
 		protected byte[] compressAction(byte[] input) {
 			try {
-				//if input is null we have either already run, so we can return the output that we have
-				//already stored.
+				// if input is null we have either already run, so we can return the output that
+				// we have
+				// already stored.
 				if (input == null)
 					return output;
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();

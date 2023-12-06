@@ -72,7 +72,7 @@ public class ReadOnlySparqlTest {
 			}
 		}
 
-		try (WriteOnce wo = new WriteOnce(newFolder)) {
+		try (WriteOnce wo = new WriteOnce(newFolder, 0, Compression.LZ4)) {
 			wo.parse(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
 			assertTrue(Files.isDirectory(newFolder.toPath()));
 		}
@@ -159,7 +159,7 @@ public class ReadOnlySparqlTest {
 			}
 		}
 
-		try (WriteOnce wo = new WriteOnce(newFolder)) {
+		try (WriteOnce wo = new WriteOnce(newFolder, 0, Compression.LZ4)) {
 			wo.parse(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
 			assertTrue(Files.isDirectory(newFolder.toPath()));
 			File booleans = new File(newFolder, "datatype_xsd_boolean");

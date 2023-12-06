@@ -30,7 +30,7 @@ import swiss.sib.swissprot.sail.readonly.datastructures.pages.Page.Type;
 
 /**
  *
- * @author Jerven Bolleman <jerven.bolleman@sib.swiss>
+ @author <a href="mailto:jerven.bolleman@sib.swiss">Jerven Bolleman</a>
  * @param <T> the type of object represented by this key value store
  */
 public class LongLongSpinalList<T> {

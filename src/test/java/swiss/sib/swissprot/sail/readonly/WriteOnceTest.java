@@ -80,7 +80,7 @@ public class WriteOnceTest {
 			}
 		}
 
-		try (WriteOnce wo = new WriteOnce(newFolder)) {
+		try (WriteOnce wo = new WriteOnce(newFolder, 0, Compression.LZ4)) {
 			wo.parse(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
 			assertTrue(Files.isDirectory(newFolder.toPath()));
 		}
@@ -146,7 +146,7 @@ public class WriteOnceTest {
 			statements.add(vf.createStatement(subject, RDFS.LABEL, vf.createLiteral(true)));
 		}
 		File input = writeTestInput(statements);
-		try (WriteOnce wo = new WriteOnce(newFolder)) {
+		try (WriteOnce wo = new WriteOnce(newFolder, 0, Compression.LZ4)) {
 			wo.parse(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
 		}
 		ReadOnlyStore readOnlyStore = new ReadOnlyStore(newFolder);
@@ -184,7 +184,7 @@ public class WriteOnceTest {
 		}
 		File input = writeTestInput(statements);
 
-		try (WriteOnce wo = new WriteOnce(newFolder)) {
+		try (WriteOnce wo = new WriteOnce(newFolder, 0, Compression.LZ4)) {
 			wo.parse(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
 			assertTrue(Files.isDirectory(newFolder.toPath()));
 

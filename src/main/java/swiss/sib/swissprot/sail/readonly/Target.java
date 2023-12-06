@@ -43,6 +43,7 @@ import swiss.sib.swissprot.sail.readonly.WriteOnce.Kind;
 import swiss.sib.swissprot.sail.readonly.storing.TemporaryGraphIdMap;
 
 final class Target implements AutoCloseable {
+	private final Compression tempCompression;
 	private static final int MERGE_X_FILES = 16;
 	private final int maxTempFiles;
 	private static final Logger logger = LoggerFactory.getLogger(Target.class);
@@ -54,6 +55,7 @@ final class Target implements AutoCloseable {
 	private final File targetTripleFile;
 	private final TemporaryGraphIdMap tgid;
 	private final ExecutorService exec;
+	private final ExecutorService fileMergeExec = Executors.newVirtualThreadPerTaskExecutor();
 
 	private final Map<Integer, List<TempSortedFile>> sortedTempFilesByMergeLevel = new ConcurrentHashMap<>();
 	private final List<Future<IOException>> running = newThreadSafeList();
@@ -105,10 +107,9 @@ final class Target implements AutoCloseable {
 		public void reopenTripleWriter() throws IOException {
 			int id = tempFileNamerCount++;
 			this.tempFile = new File(targetTripleFile.getParentFile(),
-					Compression.removeExtension(targetTripleFile.getName()) + '-' + id
-							+ WriteOnce.COMPRESSION.extension());
-			this.writer = new DataOutputStream(WriteOnce.COMPRESSION.compress(tempFile));
-			this.toSort = new TempSortedFile(tempFile, subjectKind, objectKind, datatype, lang, WriteOnce.COMPRESSION);
+					Compression.removeExtension(targetTripleFile.getName()) + '-' + id + tempCompression.extension());
+			this.writer = new DataOutputStream(tempCompression.compress(tempFile));
+			this.toSort = new TempSortedFile(tempFile, subjectKind, objectKind, datatype, lang, tempCompression);
 
 		}
 
@@ -127,11 +128,11 @@ final class Target implements AutoCloseable {
 	};
 
 	Target(Statement template, File directory, TemporaryGraphIdMap tgid) throws IOException {
-		this(template, directory, tgid, Executors.newSingleThreadExecutor(), 1, new Semaphore(1));
+		this(template, directory, tgid, Executors.newSingleThreadExecutor(), 1, new Semaphore(1), Compression.LZ4);
 	}
 
 	Target(Statement template, File directory, TemporaryGraphIdMap tgid, ExecutorService exec, int maxTempFiles,
-			Semaphore sortPressureLimit) throws IOException {
+			Semaphore sortPressureLimit, Compression tempCompression) throws IOException {
 		this.tgid = tgid;
 		this.exec = exec;
 		this.maxTempFiles = maxTempFiles;
@@ -139,6 +140,7 @@ final class Target implements AutoCloseable {
 		this.subjectKind = Kind.of(template.getSubject());
 		this.objectKind = Kind.of(template.getObject());
 		this.predicate = template.getPredicate();
+		this.tempCompression = tempCompression;
 		File subdirectory = new File(directory, subjectKind.label());
 
 		if (!subdirectory.isDirectory() && !subdirectory.mkdir())
@@ -172,9 +174,9 @@ final class Target implements AutoCloseable {
 	private IOException sortTempFile(File tempFile) {
 		try {
 			File sortedTempFile = new File(tempFile.getParent(),
-					Compression.removeExtension(tempFile.getName()) + ".sorted" + WriteOnce.COMPRESSION.extension());
+					Compression.removeExtension(tempFile.getName()) + ".sorted" + tempCompression.extension());
 			TempSortedFile tempSortedFile = new TempSortedFile(sortedTempFile, subjectKind, objectKind, datatype, lang,
-					WriteOnce.COMPRESSION);
+					tempCompression);
 			tempSortedFile.from(tempFile);
 			tempFile.delete();
 			addToMergeLevelZero(tempSortedFile);
@@ -213,7 +215,7 @@ final class Target implements AutoCloseable {
 	}
 
 	private void mergeFiles(int level, List<TempSortedFile> toMerge) throws IOException {
-		running.add(exec.submit(new FileMerger(level, toMerge)));
+		running.add(fileMergeExec.submit(new FileMerger(level, toMerge)));
 	}
 
 	private class FileMerger implements Callable<IOException> {
@@ -232,7 +234,7 @@ final class Target implements AutoCloseable {
 				File firstFile = toMerge.get(0).file();
 				File sortedTempFile = new File(firstFile.getParent(), firstFile.getName() + "-" + nextLevel);
 				TempSortedFile tempSortedFile = new TempSortedFile(sortedTempFile, subjectKind, objectKind, datatype,
-						lang, WriteOnce.COMPRESSION);
+						lang, tempCompression);
 				tempSortedFile.merge(toMerge, null);
 
 				for (TempSortedFile merged : toMerge) {
@@ -257,12 +259,10 @@ final class Target implements AutoCloseable {
 	private void sortTempFilesIntoTarget() throws IOException {
 		try {
 			mergeLock.lock();
-			List<TempSortedFile> collect = sortedTempFilesByMergeLevel.values()
-					.stream()
-					.flatMap(List::stream)
+			List<TempSortedFile> collect = sortedTempFilesByMergeLevel.values().stream().flatMap(List::stream)
 					.collect(Collectors.toList());
 			TempSortedFile tempSortedFile = new TempSortedFile(targetTripleFile, subjectKind, objectKind, datatype,
-					lang, WriteOnce.COMPRESSION);
+					lang, tempCompression);
 			tempSortedFile.merge(collect, exec);
 			for (TempSortedFile tsf : collect)
 				tsf.delete();
@@ -281,7 +281,7 @@ final class Target implements AutoCloseable {
 
 	private File newFile(File subdirectory, String string) throws IOException {
 
-		File file = new File(subdirectory, string + WriteOnce.COMPRESSION.extension());
+		File file = new File(subdirectory, string + tempCompression.extension());
 		if (file.exists() && !file.delete())
 			throw new IOException("Previous file exists and can't be removed:" + file);
 		return file;
@@ -453,7 +453,7 @@ final class Target implements AutoCloseable {
 	}
 
 	public TempSortedFile getTripleFile() {
-		return new TempSortedFile(targetTripleFile, subjectKind, objectKind, datatype, lang, WriteOnce.COMPRESSION);
+		return new TempSortedFile(targetTripleFile, subjectKind, objectKind, datatype, lang, tempCompression);
 	}
 
 	public File getTripleFinalFile() {

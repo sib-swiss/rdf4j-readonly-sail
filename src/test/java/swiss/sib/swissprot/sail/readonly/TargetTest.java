@@ -45,7 +45,7 @@ public class TargetTest {
 		Statement template = SimpleValueFactory.getInstance().createStatement(RDF.ALT, RDF.TYPE, RDF.BAG, RDF.FIRST);
 		Statement template2 = SimpleValueFactory.getInstance().createStatement(RDF.ALT, RDF.TYPE, RDF.BAG, RDF.NIL);
 		ExecutorService exec = Executors.newSingleThreadExecutor();
-		Target target = new Target(template, temp.newFolder(), new TemporaryGraphIdMap(), exec, 2, new Semaphore(2));
+		Target target = new Target(template, temp.newFolder(), new TemporaryGraphIdMap(), exec, 2, new Semaphore(2), Compression.LZ4);
 		target.write(template);
 		target.write(template2);
 		target.close();
@@ -58,7 +58,7 @@ public class TargetTest {
 		Statement template = VF.createStatement(RDF.ALT, RDF.TYPE, VF.createLiteral(0), RDF.FIRST);
 		ExecutorService exec = Executors.newSingleThreadExecutor();
 		TemporaryGraphIdMap tgid = new TemporaryGraphIdMap();
-		Target target = new Target(template, temp.newFolder(), tgid, exec, 1, new Semaphore(1));
+		Target target = new Target(template, temp.newFolder(), tgid, exec, 1, new Semaphore(1), Compression.LZ4);
 		int openFilesBefore = OpenFileCount.openFileCount();
 		int noOfTriples = 2;
 		for (int i = 0; i < noOfTriples; i++) {
@@ -97,7 +97,7 @@ public class TargetTest {
 		Statement template = VF.createStatement(RDF.ALT, RDF.TYPE, VF.createLiteral("0", "en_UK"), RDF.FIRST);
 		ExecutorService exec = Executors.newSingleThreadExecutor();
 		TemporaryGraphIdMap tgid = new TemporaryGraphIdMap();
-		Target target = new Target(template, temp.newFolder(), tgid, exec, 1, new Semaphore(1));
+		Target target = new Target(template, temp.newFolder(), tgid, exec, 1, new Semaphore(1), Compression.LZ4);
 		int openFilesBefore = OpenFileCount.openFileCount();
 //		operatingSystemMXBean.
 		int noOfTriples = 2;

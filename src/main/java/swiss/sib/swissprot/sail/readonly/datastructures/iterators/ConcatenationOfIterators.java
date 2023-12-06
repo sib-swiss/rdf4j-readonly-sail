@@ -14,7 +14,7 @@ import java.util.Iterator;
 
 /**
  *
- * @author Jerven Bolleman <jerven.bolleman@sib.swiss>
+ @author <a href="mailto:jerven.bolleman@sib.swiss">Jerven Bolleman</a>
  */
 class ConcatenationOfIterators<T> implements Iterator<T> {
 

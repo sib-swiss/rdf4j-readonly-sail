@@ -83,6 +83,7 @@ import swiss.sib.swissprot.sail.readonly.storing.TemporaryGraphIdMap;
 public class WriteOnce implements AutoCloseable {
 
 	public static final Compression COMPRESSION = Compression.LZ4;
+
 	private static final Logger logger = LoggerFactory.getLogger(WriteOnce.class);
 	static final char fieldSep = '\t';
 
@@ -100,12 +101,13 @@ public class WriteOnce implements AutoCloseable {
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	/**
-	 * Try to select a reasonable number of concurrent parse threads to actually run.
+	 * Try to select a reasonable number of concurrent parse threads to actually
+	 * run.
 	 */
 	private final Semaphore parsePresureLimit;
 	/**
-	 * The sort pressure limit is there to make sure the files being sorted fit in the java heap and avoids issues with
-	 * OutOfMemory
+	 * The sort pressure limit is there to make sure the files being sorted fit in
+	 * the java heap and avoids issues with OutOfMemory
 	 */
 	private final Semaphore sortPresureLimit;
 	private final int concurrentTargetFiles;
@@ -114,18 +116,14 @@ public class WriteOnce implements AutoCloseable {
 	 */
 	private final Lock predicateSeenLock = new ReentrantLock();
 
+	private final Compression tempCompression;
+
 	/**
 	 * Error exit codes.
 	 */
 	public static enum Failures {
-		UNKOWN_FORMAT(1),
-		GENERIC_RDF_PARSE_IO_ERROR(2),
-		CUT_SORT_UNIQ_IO(4),
-		GENERIC_RDF_PARSE_ERROR(5),
-		TO_LOAD_FILE_NOT_CORRECT(7),
-		NOT_DONE_YET(8),
-		NO_GRAPH(9),
-		GRAPH_ID_NOT_IRI(10);
+		UNKOWN_FORMAT(1), GENERIC_RDF_PARSE_IO_ERROR(2), CUT_SORT_UNIQ_IO(4), GENERIC_RDF_PARSE_ERROR(5),
+		TO_LOAD_FILE_NOT_CORRECT(7), NOT_DONE_YET(8), NO_GRAPH(9), GRAPH_ID_NOT_IRI(10);
 
 		private final int exitCode;
 
@@ -138,13 +136,10 @@ public class WriteOnce implements AutoCloseable {
 		}
 	}
 
-	public WriteOnce(File directoryToWriteToo) throws IOException {
-		this(directoryToWriteToo, 0);
-	}
-
-	public WriteOnce(File directoryToWriteToo, int step) throws IOException {
+	public WriteOnce(File directoryToWriteToo, int step, Compression tempCompression) throws IOException {
 		super();
 		this.directoryToWriteToo = directoryToWriteToo;
+		this.tempCompression = tempCompression;
 		if (!directoryToWriteToo.exists()) {
 			directoryToWriteToo.mkdirs();
 		}
@@ -162,7 +157,7 @@ public class WriteOnce implements AutoCloseable {
 	}
 
 	private int estimateParsingProcessors(int procs) {
-		return Math.max(1, procs / 2);
+		return Math.max(1, (procs / 4) * 3);
 	}
 
 	private int estimateMaxConcurrentSorters(long maxMemory, int procs) {
@@ -176,11 +171,9 @@ public class WriteOnce implements AutoCloseable {
 		File directoryToWriteToo = new File(args[1]);
 		Path path = Paths.get(fileDescribedToLoad);
 		List<String> lines = Files.readAllLines(path);
-		int step = 0;
-		if (args.length >= 3) {
-			step = Integer.parseInt(args[2]);
-		}
-		try (WriteOnce wo = new WriteOnce(directoryToWriteToo, step)) {
+		int step = Integer.parseInt(args[2]);
+		Compression tempCompression = Compression.fromExtension(args[3]);
+		try (WriteOnce wo = new WriteOnce(directoryToWriteToo, step, tempCompression)) {
 			wo.parse(lines);
 		} catch (IOException e) {
 			logger.error("io", e);
@@ -294,12 +287,12 @@ public class WriteOnce implements AutoCloseable {
 	}
 
 	private RDFHandler newHandler(IRI graph) {
-		return new Handler(new GraphIdIri(graph, temporaryGraphIdMap.tempGraphId(graph)));
+		return new Handler(new GraphIdIri(graph, temporaryGraphIdMap.tempGraphId(graph)), tempCompression);
 	}
 
 	/**
-	 * This class reduces contention on the tempGraphId map. Or in practical terms saves a billion or so string hashCode
-	 * operations etc.
+	 * This class reduces contention on the tempGraphId map. Or in practical terms
+	 * saves a billion or so string hashCode operations etc.
 	 */
 	static class GraphIdIri implements IRI {
 
@@ -600,8 +593,8 @@ public class WriteOnce implements AutoCloseable {
 	}
 
 	private Target writeStatement(File directoryToWriteToo, Set<IRI> predicatesInOrderOfSeen,
-			Map<IRI, PredicateDirectoryWriter> predicateDirectories, Statement next, Target previous)
-			throws IOException {
+			Map<IRI, PredicateDirectoryWriter> predicateDirectories, Statement next, Target previous,
+			Compression tempCompression) throws IOException {
 		PredicateDirectoryWriter predicateDirectoryWriter;
 		if (previous != null && previous.testForAcceptance(next)) {
 			previous.write(next);
@@ -611,14 +604,15 @@ public class WriteOnce implements AutoCloseable {
 			predicateDirectoryWriter = predicateDirectories.get(predicate);
 			if (predicateDirectoryWriter == null) {
 				predicateDirectoryWriter = addNewPredicateWriter(directoryToWriteToo, predicatesInOrderOfSeen,
-						predicateDirectories, predicate);
+						predicateDirectories, predicate, tempCompression);
 			}
 			return predicateDirectoryWriter.write(next);
 		}
 	}
 
 	private PredicateDirectoryWriter addNewPredicateWriter(File directoryToWriteToo, Set<IRI> predicatesInOrderOfSeen,
-			Map<IRI, PredicateDirectoryWriter> predicateDirectories, IRI predicate) throws IOException {
+			Map<IRI, PredicateDirectoryWriter> predicateDirectories, IRI predicate, Compression tempCompression)
+			throws IOException {
 		PredicateDirectoryWriter predicateDirectoryWriter;
 		try {
 			predicateSeenLock.lock();
@@ -626,7 +620,7 @@ public class WriteOnce implements AutoCloseable {
 			if (!predicatesInOrderOfSeen.contains(predicate)) {
 				predicatesInOrderOfSeen.add(predicate);
 				predicateDirectoryWriter = createPredicateDirectoryWriter(directoryToWriteToo, predicateDirectories,
-						predicate, temporaryGraphIdMap);
+						predicate, temporaryGraphIdMap, tempCompression);
 				predicateDirectories.put(predicate, predicateDirectoryWriter);
 			} else {
 				predicateDirectoryWriter = predicateDirectories.get(predicate);
@@ -644,21 +638,18 @@ public class WriteOnce implements AutoCloseable {
 
 	private PredicateDirectoryWriter createPredicateDirectoryWriter(File directoryToWriteToo,
 			Map<IRI, PredicateDirectoryWriter> predicatesInOrderOfSeen, IRI predicate,
-			TemporaryGraphIdMap temporaryGraphIdMap2) throws IOException {
+			TemporaryGraphIdMap temporaryGraphIdMap2, Compression tempCompression) throws IOException {
 		File pred_dir = new File(directoryToWriteToo, PRED_DIR_PREFIX + predicatesInOrderOfSeen.size());
 		if (!pred_dir.isDirectory() && !pred_dir.mkdir())
 			throw new RuntimeException("can't make directory" + pred_dir.getAbsolutePath());
 		PredicateDirectoryWriter predicateDirectoryWriter = new PredicateDirectoryWriter(pred_dir, temporaryGraphIdMap2,
-				exec, concurrentTargetFiles, sortPresureLimit, predicate);
+				exec, concurrentTargetFiles, sortPresureLimit, predicate, tempCompression);
 		predicatesInOrderOfSeen.put(predicate, predicateDirectoryWriter);
 		return predicateDirectoryWriter;
 	}
 
 	public enum Kind {
-		BNODE(0),
-		IRI(1),
-		LITERAL(2),
-		TRIPLE(3);
+		BNODE(0), IRI(1), LITERAL(2), TRIPLE(3);
 
 		private final int sortOrder;
 
@@ -707,15 +698,18 @@ public class WriteOnce implements AutoCloseable {
 		private final Semaphore sortPressureLimit;
 		private final Lock lock = new ReentrantLock();
 		private final IRI predicate;
+		private final Compression tempCompression;
 
 		private PredicateDirectoryWriter(File directory, TemporaryGraphIdMap temporaryGraphIdMap, ExecutorService exec,
-				int concurrentTargetFiles, Semaphore sortPressureLimit, IRI predicate) throws IOException {
+				int concurrentTargetFiles, Semaphore sortPressureLimit, IRI predicate, Compression tempCompression)
+				throws IOException {
 			this.directory = directory;
 			this.temporaryGraphIdMap = temporaryGraphIdMap;
 			this.exec = exec;
 			this.concurrentTargetFiles = concurrentTargetFiles;
 			this.sortPressureLimit = sortPressureLimit;
 			this.predicate = predicate;
+			this.tempCompression = tempCompression;
 		}
 
 		/**
@@ -737,7 +731,7 @@ public class WriteOnce implements AutoCloseable {
 						findAny.write(statement);
 					else {
 						findAny = new Target(statement, directory, temporaryGraphIdMap, exec, concurrentTargetFiles,
-								sortPressureLimit);
+								sortPressureLimit, tempCompression);
 						targets.put(key, findAny);
 						findAny.write(statement);
 					}
@@ -769,10 +763,12 @@ public class WriteOnce implements AutoCloseable {
 		private final Map<String, Long> bnodeMap = new HashMap<>();
 		private final IRI graph;
 		private Target previous = null;
+		private final Compression tempCompression;
 
-		public Handler(IRI graph) {
+		public Handler(IRI graph, Compression tempCompression) {
 			super();
 			this.graph = graph;
+			this.tempCompression = tempCompression;
 		}
 
 		@Override
@@ -806,7 +802,7 @@ public class WriteOnce implements AutoCloseable {
 			}
 			try {
 				previous = writeStatement(directoryToWriteToo, predicatesInOrderOfSeen, predicatesDirectories, next,
-						previous);
+						previous, tempCompression);
 			} catch (IOException e) {
 				logger.error("IO:", e);
 				throw new RDFHandlerException("Failure passing data on", e);

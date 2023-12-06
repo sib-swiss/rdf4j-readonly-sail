@@ -32,7 +32,7 @@ import swiss.sib.swissprot.sail.readonly.ReadOnlyBlankNode;
  *
  * Overrides a few methods to use the sorted in order behaviour of the ReadOnlyStore
  *
- * @author jbollema
+ * @author <a href="mailto:jerven.bolleman@sib.swiss">Jerven Bolleman</a>
  * @author james
  * @author Arjohn Kampman
  */

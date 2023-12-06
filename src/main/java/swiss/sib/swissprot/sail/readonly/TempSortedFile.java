@@ -42,7 +42,7 @@ import swiss.sib.swissprot.sail.readonly.sorting.Comparators;
  * A collection of methods to turn an unsorted file into one which is sorted. Also merging multiple of these files into
  * one.
  *
- * @author jbollema
+ * @author <a href="mailto:jerven.bolleman@sib.swiss">Jerven Bolleman</a>
  *
  */
 public class TempSortedFile {
@@ -126,16 +126,17 @@ public class TempSortedFile {
 	}
 
 	private void writeSubjectObjectGraphs(File tempFile) throws IOException, FileNotFoundException {
-		List<SubjectObjectGraph> temp = new ArrayList<>();
+		List<SubjectObjectGraph> temp = new ArrayList<>();		
+		SogComparator comparator = comparator();
 		try (InputStream bis = compression.decompress(tempFile); DataInputStream dis = new DataInputStream(bis)) {
-			Iterator<SubjectObjectGraph> iter = iterator(dis);
+			Iterator<SubjectObjectGraph> iter =  new ReducingIterator<>(iterator(dis), comparator);
 			while (iter.hasNext()) {
 				SubjectObjectGraph line = iter.next();
 				temp.add(line);
 			}
 		}
 
-		SogComparator comparator = comparator();
+
 		temp.sort(comparator);
 		write(temp.iterator());
 	}

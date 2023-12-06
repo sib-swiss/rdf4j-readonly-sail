@@ -18,7 +18,7 @@ import java.util.PrimitiveIterator;
 
 /**
  *
- * @author Jerven Bolleman <jerven.bolleman@sib.swiss>
+ @author <a href="mailto:jerven.bolleman@sib.swiss">Jerven Bolleman</a>
  */
 public class BasicBufferedPage<T> implements Page<T> {
 

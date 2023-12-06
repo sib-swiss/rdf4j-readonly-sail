@@ -26,7 +26,7 @@ import swiss.sib.swissprot.sail.readonly.datastructures.iterators.Iterators;
 
 /**
  *
- * @author Jerven Bolleman <jerven.bolleman@sib.swiss>
+ @author <a href="mailto:jerven.bolleman@sib.swiss">Jerven Bolleman</a>
  * @param <T>
  */
 public class CompressedBufferedPage<T> implements Page<T> {
