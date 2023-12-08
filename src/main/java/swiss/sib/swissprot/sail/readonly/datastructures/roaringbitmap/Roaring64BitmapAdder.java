@@ -56,7 +56,7 @@ public class Roaring64BitmapAdder {
 			while (from < at) {
 				int monotonicallyIncreasesTill = monotonicallyIncreasesTill(listToAdd, from, at);
 				if (monotonicallyIncreasesTill > from) {
-					bitmap.add(listToAdd[from], listToAdd[monotonicallyIncreasesTill] + 1);
+					bitmap.addRange(listToAdd[from], listToAdd[monotonicallyIncreasesTill] + 1);
 					from = monotonicallyIncreasesTill;
 					added++;
 				} else {

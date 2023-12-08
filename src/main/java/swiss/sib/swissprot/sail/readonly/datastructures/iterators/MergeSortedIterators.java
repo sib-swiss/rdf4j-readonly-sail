@@ -39,7 +39,6 @@ class MergeSortedIterators<T> implements Iterator<T> {
 	private int size;
 	private final boolean distinct;
 
-	@SuppressWarnings("unchecked")
 	MergeSortedIterators(Comparator<T> comparator, List<Iterator<T>> fileReaders) {
 		this(comparator, fileReaders, true);
 	}

@@ -20,7 +20,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.algebra.TupleExpr;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategy;
+import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
 import org.eclipse.rdf4j.repository.sparql.federation.SPARQLServiceResolver;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.AbstractSailConnection;
@@ -48,7 +48,7 @@ public class ReadonlyStoreConnection extends AbstractSailConnection {
 
 		try {
 			ReadOnlyDataTripleSource tripleSource = new ReadOnlyDataTripleSource(sail.getValueFactory(), sail);
-			StrictEvaluationStrategy strategy = new ReadOnlyQueryStrictEvaluationStrategy(tripleSource, dataset, fd);
+			EvaluationStrategy strategy = new ReadOnlyQueryStrictEvaluationStrategy(tripleSource, dataset, fd);
 			tupleExpr = optimize(tripleSource, strategy, tupleExpr, bindings);
 			return strategy.precompile(tupleExpr).evaluate(bindings);
 		} catch (QueryEvaluationException e) {
@@ -56,7 +56,7 @@ public class ReadonlyStoreConnection extends AbstractSailConnection {
 		}
 	}
 
-	private TupleExpr optimize(ReadOnlyDataTripleSource tripleSource, StrictEvaluationStrategy strategy,
+	private TupleExpr optimize(ReadOnlyDataTripleSource tripleSource, EvaluationStrategy strategy,
 			TupleExpr tupleExpr, BindingSet bindings) {
 		ReadOnlyEvaluationStatistics evStats = new ReadOnlyEvaluationStatistics(sail);
 		ReadOnlyQueryOptimizerPipeline queryOptimizer = new ReadOnlyQueryOptimizerPipeline(strategy, tripleSource,

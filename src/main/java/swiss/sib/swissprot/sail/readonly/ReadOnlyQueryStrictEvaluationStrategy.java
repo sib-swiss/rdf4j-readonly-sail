@@ -16,13 +16,13 @@ import org.eclipse.rdf4j.query.algebra.Join;
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryEvaluationStep;
 import org.eclipse.rdf4j.query.algebra.evaluation.federation.FederatedServiceResolver;
+import org.eclipse.rdf4j.query.algebra.evaluation.impl.DefaultEvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.QueryEvaluationContext;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.evaluationsteps.JoinQueryEvaluationStep;
 
 import swiss.sib.swissprot.sail.readonly.evaluation.ReadOnlyMergeJoinQueryEvaluationStep;
 
-public class ReadOnlyQueryStrictEvaluationStrategy extends StrictEvaluationStrategy {
+public class ReadOnlyQueryStrictEvaluationStrategy extends DefaultEvaluationStrategy {
 
 	public ReadOnlyQueryStrictEvaluationStrategy(ReadOnlyDataTripleSource tripleSource,
 			FederatedServiceResolver serviceResolver) {

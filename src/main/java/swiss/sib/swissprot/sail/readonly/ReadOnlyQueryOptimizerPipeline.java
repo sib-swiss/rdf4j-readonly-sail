@@ -12,11 +12,11 @@ package swiss.sib.swissprot.sail.readonly;
 
 import java.util.Arrays;
 
+import org.eclipse.rdf4j.query.algebra.evaluation.EvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.QueryOptimizerPipeline;
 import org.eclipse.rdf4j.query.algebra.evaluation.TripleSource;
 import org.eclipse.rdf4j.query.algebra.evaluation.impl.EvaluationStatistics;
-import org.eclipse.rdf4j.query.algebra.evaluation.impl.StrictEvaluationStrategy;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.BindingAssignerOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.CompareOptimizer;
 import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.ConjunctiveConstraintSplitterOptimizer;
@@ -32,10 +32,10 @@ import org.eclipse.rdf4j.query.algebra.evaluation.optimizer.SameTermFilterOptimi
 public class ReadOnlyQueryOptimizerPipeline implements QueryOptimizerPipeline {
 
 	private final TripleSource ts;
-	private final StrictEvaluationStrategy strategy;
+	private final EvaluationStrategy strategy;
 	private final EvaluationStatistics ev;
 
-	public ReadOnlyQueryOptimizerPipeline(StrictEvaluationStrategy strategy, TripleSource ts, EvaluationStatistics ev) {
+	public ReadOnlyQueryOptimizerPipeline(EvaluationStrategy strategy, TripleSource ts, EvaluationStatistics ev) {
 		this.ts = ts;
 		this.strategy = strategy;
 		this.ev = ev;

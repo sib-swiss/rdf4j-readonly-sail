@@ -25,7 +25,6 @@ import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runners.Parameterized.Parameter;
 
 public class CompressionTest {
 
