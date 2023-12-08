@@ -44,7 +44,7 @@ import swiss.sib.swissprot.sail.readonly.storing.TemporaryGraphIdMap;
 
 final class Target implements AutoCloseable {
 	private final Compression tempCompression;
-	private static final int MERGE_X_FILES = 16;
+	private static final int MERGE_X_FILES = 64;
 	private final int maxTempFiles;
 	private static final Logger logger = LoggerFactory.getLogger(Target.class);
 	protected static final long SWITCH_TO_NEW_FILE = 128l * 1024l * 1024l;
