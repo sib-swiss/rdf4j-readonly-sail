@@ -258,11 +258,11 @@ public enum Compression {
 			return pb;
 		}
 	},
-	NONE("") {
+	NONE(".none") {
 
 		@Override
 		public InputStream decompress(File f) throws FileNotFoundException, IOException {
-			return new FileInputStream(f);
+			return new BufferedInputStream(new FileInputStream(f));
 		}
 
 		@Override

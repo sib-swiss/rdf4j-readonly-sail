@@ -10,6 +10,7 @@
  *******************************************************************************/
 package swiss.sib.swissprot.sail.readonly;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -259,7 +260,9 @@ public class ReadOnlyStore extends AbstractSail {
 		for (File graphFile : objectFiles.getParentFile().listFiles()) {
 			if (graphFile.getName().startsWith("graph-" + objectFileMinusPostFix + "-")) {
 				IRI graphIri = new ReadOnlyIRI(Long.parseLong(graphFile.getName().split("-")[2]), iris);
-				try (InputStream is = new FileInputStream(graphFile); DataInputStream dis = new DataInputStream(is)) {
+				try (InputStream is = new FileInputStream(graphFile);
+						BufferedInputStream bis = new BufferedInputStream(is);
+						DataInputStream dis = new DataInputStream(bis)) {
 					Roaring64Bitmap rb = new Roaring64Bitmap();
 					rb.deserialize(dis);
 					graphs.put(graphIri, rb);
