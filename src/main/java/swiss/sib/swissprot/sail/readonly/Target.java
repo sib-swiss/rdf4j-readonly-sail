@@ -55,7 +55,6 @@ final class Target implements AutoCloseable {
 	private final File targetTripleFile;
 	private final TemporaryGraphIdMap tgid;
 	private final ExecutorService exec;
-	private final ExecutorService fileMergeExec = Executors.newVirtualThreadPerTaskExecutor();
 
 	private final Map<Integer, List<TempSortedFile>> sortedTempFilesByMergeLevel = new ConcurrentHashMap<>();
 	private final List<Future<IOException>> running = newThreadSafeList();
@@ -215,7 +214,7 @@ final class Target implements AutoCloseable {
 	}
 
 	private void mergeFiles(int level, List<TempSortedFile> toMerge) throws IOException {
-		running.add(fileMergeExec.submit(new FileMerger(level, toMerge)));
+		running.add(exec.submit(new FileMerger(level, toMerge)));
 	}
 
 	private class FileMerger implements Callable<IOException> {
