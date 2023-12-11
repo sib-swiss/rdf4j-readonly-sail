@@ -16,7 +16,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -48,9 +47,7 @@ public class RawIO {
 		// Without the length if variable
 		public Value read(byte[] in);
 
-		public default Value read(byte[] in, int offset, int length) {
-			return read(Arrays.copyOfRange(in, offset, length));
-		}
+		public Value read(byte[] in, int offset, int length);
 
 		// Without the length;
 		public default byte[] getBytes(Value v) {
@@ -79,6 +76,11 @@ public class RawIO {
 		public IRI read(byte[] content) {
 			return SVF.createIRI(new String(content, StandardCharsets.UTF_8));
 		}
+		
+		@Override
+		public IRI read(byte[] content, int offset, int length) {
+			return SVF.createIRI(new String(content, offset, length, StandardCharsets.UTF_8));
+		}
 	}
 
 	private static record LangStringIO(String lang) implements IO {
@@ -90,10 +92,14 @@ public class RawIO {
 		}
 
 		@Override
-		public Value read(byte[] in) {
+		public Literal read(byte[] in) {
 			return SVF.createLiteral(new String(in, StandardCharsets.UTF_8), lang);
 		}
-
+		
+		@Override
+		public Literal read(byte[] content, int offset, int length) {
+			return SVF.createLiteral(new String(content, offset, length, StandardCharsets.UTF_8), lang);
+		}
 	}
 
 	private static class BNodeIO implements IO {
@@ -131,6 +137,11 @@ public class RawIO {
 		public BNode read(byte[] in) {
 			return SVF.createBNode(Long.toString(ByteBuffer.wrap(in).getLong(0)));
 		}
+		
+		@Override
+		public BNode read(byte[] in, int offset, int length) {
+			return SVF.createBNode(Long.toString(ByteBuffer.wrap(in).getLong(offset)));
+		}
 
 		@Override
 		public boolean fixedWidth() {
@@ -154,6 +165,11 @@ public class RawIO {
 		@Override
 		public Value read(byte[] in) {
 			return SVF.createLiteral(new String(in, StandardCharsets.UTF_8), datatype);
+		}
+		
+		@Override
+		public Value read(byte[] in, int offset, int length) {
+			return SVF.createLiteral(new String(in, offset, length, StandardCharsets.UTF_8), datatype);
 		}
 	}
 
@@ -187,6 +203,11 @@ public class RawIO {
 		@Override
 		public Value read(byte[] in) {
 			return SVF.createLiteral(ByteBuffer.wrap(in).getInt(0));
+		}
+		
+		@Override
+		public Value read(byte[] in, int offset, int length) {
+			return SVF.createLiteral(ByteBuffer.wrap(in).getInt(offset));
 		}
 
 		@Override
@@ -230,6 +251,11 @@ public class RawIO {
 		@Override
 		public Value read(byte[] in) {
 			return SVF.createLiteral(ByteBuffer.wrap(in).getLong(0));
+		}
+		
+		@Override
+		public Value read(byte[] in, int offset, int length) {
+			return SVF.createLiteral(ByteBuffer.wrap(in).getLong(offset));
 		}
 
 		@Override
@@ -275,6 +301,11 @@ public class RawIO {
 		}
 
 		@Override
+		public Value read(byte[] in, int offset, int length) {
+			return SVF.createLiteral(ByteBuffer.wrap(in).getDouble(offset));
+		}
+		
+		@Override
 		public boolean fixedWidth() {
 			return true;
 		}
@@ -314,6 +345,11 @@ public class RawIO {
 		@Override
 		public Value read(byte[] in) {
 			return SVF.createLiteral(ByteBuffer.wrap(in).getFloat(0));
+		}
+
+		@Override
+		public Value read(byte[] in, int offset, int length) {
+			return SVF.createLiteral(ByteBuffer.wrap(in).getFloat(offset));
 		}
 
 		@Override
