@@ -35,8 +35,8 @@ public record ReadOnlyGYear(int year) implements Literal, ReadOnlyValue {
 		if (rogy instanceof ReadOnlyGYear) {
 			return ((ReadOnlyGYear) rogy).year;
 		} else {
-			if (rogy.getCoreDatatype() == CoreDatatype.XSD.GYEAR && "0".equals(rogy.getLabel())) {
-				return 0L;
+			if (rogy.getCoreDatatype() == CoreDatatype.XSD.GYEAR) {
+				return Long.parseLong(rogy.getLabel());
 			} else {
 				return rogy.calendarValue().getYear();
 			}

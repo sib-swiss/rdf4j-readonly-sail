@@ -33,6 +33,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -85,8 +86,8 @@ public class WriteOnceTest {
 			assertTrue(Files.isDirectory(newFolder.toPath()));
 		}
 		ReadOnlyStore readOnlyStore = new ReadOnlyStore(newFolder);
-		try (CloseableIteration<? extends Statement> statements2 = readOnlyStore.getConnection()
-				.getStatements(null, RDF.TYPE, null, false)) {
+		try (CloseableIteration<? extends Statement> statements2 = readOnlyStore.getConnection().getStatements(null,
+				RDF.TYPE, null, false)) {
 			// TODO account for literals
 			assertEquals(3, statements2.stream().count());
 		}
@@ -220,9 +221,7 @@ public class WriteOnceTest {
 		assertNotNull(iterateStatements.next());
 		assertFalse(iterateStatements.hasNext());
 
-		List<String> sorted = IntStream.range(0, 1_000)
-				.mapToObj(Integer::toString)
-				.sorted()
+		List<String> sorted = IntStream.range(0, 1_000).mapToObj(Integer::toString).sorted()
 				.collect(Collectors.toList());
 
 		{
@@ -316,6 +315,163 @@ public class WriteOnceTest {
 				assertFalse(evaluate.hasNext());
 			}
 
+		}
+	}
+
+	@Test
+	public void years() throws IOException {
+		File newFolder = temp.newFolder("db");
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+
+		List<Statement> statements = new ArrayList<>();
+		final int begin = 1_000;
+		final int end = 4_000;
+		for (int i = begin; i < end; i++) {
+			IRI subject = makeSubject(vf, i);
+			statements.add(vf.createStatement(subject, RDF.TYPE, RDF.BAG));
+			statements.add(vf.createStatement(subject, RDF.TYPE, RDF.ALT));
+			statements.add(vf.createStatement(subject, RDFS.LABEL,
+					vf.createLiteral(Integer.toString(i), CoreDatatype.XSD.GYEAR)));
+		}
+		File input = writeTestInput(statements);
+
+		try (WriteOnce wo = new WriteOnce(newFolder, 0, Compression.LZ4)) {
+			wo.parse(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
+			assertTrue(Files.isDirectory(newFolder.toPath()));
+
+			File iris = new File(newFolder, "iris");
+			assertTrue(iris.exists());
+			File pred0 = new File(newFolder, "pred_0");
+
+			assertTrue(new File(newFolder, "graphs").exists());
+			File pred0irisDir = new File(pred0, "iri");
+			File[] pred0iris = new File[] { new File(pred0irisDir, "iri"), new File(pred0irisDir, "iri-compr"),
+					new File(pred0irisDir, "iri-bitsets") };
+			assertTrue(pred0iris[0].exists() || pred0iris[1].exists() | pred0iris[2].exists());
+			File booleans = new File(newFolder, "datatype_xsd_gYear");
+			assertTrue(booleans.exists());
+		}
+		ReadOnlyStore readOnlyStore = new ReadOnlyStore(newFolder);
+		List<Triples> triples = readOnlyStore.getTriples(RDF.TYPE);
+		assertEquals(triples.size(), 1);
+		Triples types = triples.get(0);
+
+		IRI knownSubject = makeSubject(vf, 2_000);
+		Iterator<Statement> iterateStatements = types.iterateStatements(knownSubject, null, null);
+		assertTrue(iterateStatements.hasNext());
+		assertNotNull(iterateStatements.next());
+		assertTrue(iterateStatements.hasNext());
+		assertNotNull(iterateStatements.next());
+		assertFalse(iterateStatements.hasNext());
+
+		List<String> sorted = IntStream.range(begin, end).mapToObj(Integer::toString).sorted()
+				.collect(Collectors.toList());
+
+		{
+			Iterator<Statement> iterator = types.iterateStatements(null, RDF.ALT, null);
+			for (int i = begin; i < end; i++) {
+				assertTrue(iterator.hasNext());
+				Statement next = iterator.next();
+				assertNotNull(next);
+				assertEquals(RDF.ALT, next.getObject());
+				assertEquals(makeSubject(vf, sorted.get(i - begin)), next.getSubject());
+			}
+			assertFalse(iterator.hasNext());
+		}
+
+		SailRepository repo = new SailRepository(readOnlyStore);
+		try (SailRepositoryConnection connection = repo.getConnection()) {
+			try (RepositoryResult<Statement> statements2 = connection.getStatements(null, null, null)) {
+				assertEquals((end - begin) * 3, statements2.stream().count());
+			}
+			try (RepositoryResult<Statement> statements2 = connection.getStatements(null, RDF.TYPE, null)) {
+				assertEquals((end - begin) * 2, statements2.stream().count());
+			}
+
+			try (RepositoryResult<Statement> statements2 = connection.getStatements(null, RDF.TYPE, RDF.ALT)) {
+				Iterator<Statement> iterator = statements2.iterator();
+
+				for (int i = begin; i < end; i++) {
+					assertTrue(iterator.hasNext());
+					Statement next = iterator.next();
+					assertNotNull(next);
+					assertEquals(RDF.ALT, next.getObject());
+					assertEquals(makeSubject(vf, sorted.get(i - begin)), next.getSubject());
+				}
+				assertFalse(iterator.hasNext());
+			}
+			try (RepositoryResult<Statement> statements2 = connection.getStatements(null, RDF.TYPE, RDF.BAG)) {
+				Iterator<Statement> iterator = statements2.iterator();
+				for (int i = begin; i < end; i++) {
+					assertTrue(iterator.hasNext());
+					Statement next = iterator.next();
+					assertNotNull(next);
+					assertEquals(RDF.BAG, next.getObject());
+					assertEquals(makeSubject(vf, sorted.get(i - begin)), next.getSubject());
+				}
+				assertFalse(iterator.hasNext());
+			}
+			try (RepositoryResult<Statement> statements2 = connection.getStatements(null, null, RDF.ALT)) {
+				Iterator<Statement> iterator = statements2.iterator();
+				for (int i = begin; i < end; i++) {
+					assertTrue(iterator.hasNext());
+					Statement next = iterator.next();
+					assertNotNull("err at:" + i, next);
+					assertEquals(RDF.ALT, next.getObject());
+					assertEquals(makeSubject(vf, sorted.get(i - begin)), next.getSubject());
+				}
+				assertFalse(iterator.hasNext());
+			}
+
+			try (RepositoryResult<Statement> statements2 = connection.getStatements(knownSubject, null, null)) {
+				Iterator<Statement> iterator = statements2.iterator();
+				assertTrue(iterator.hasNext());
+				Statement next = iterator.next();
+				assertNotNull(next);
+				assertEquals(RDFS.LABEL, next.getPredicate());
+				assertTrue(next.getObject().isLiteral());
+				assertEquals(knownSubject, next.getSubject());
+				assertNotNull(next);
+				assertTrue(iterator.hasNext());
+				next = iterator.next();
+				assertEquals(RDF.TYPE, next.getPredicate());
+				assertEquals(RDF.ALT, next.getObject());
+				assertEquals(knownSubject, next.getSubject());
+				assertTrue(iterator.hasNext());
+				next = iterator.next();
+				assertNotNull(next);
+				assertEquals(RDF.BAG, next.getObject());
+				assertEquals(RDF.TYPE, next.getPredicate());
+				assertEquals(knownSubject, next.getSubject());
+				assertFalse(iterator.hasNext());
+			}
+
+			try (RepositoryResult<Statement> statements2 = connection.getStatements(null, RDFS.LABEL, null)) {
+				Iterator<Statement> iterator = statements2.iterator();
+				for (int i = begin; i < end; i++) {
+					assertTrue(iterator.hasNext());
+					Statement next = iterator.next();
+					assertNotNull(next);
+					assertEquals(RDFS.LABEL, next.getPredicate());
+					assertTrue(next.getObject().isLiteral());
+					assertEquals(Integer.toString(i), next.getObject().toString());
+					assertTrue(next.getObject().toString() instanceof String);
+				}
+				assertFalse(iterator.hasNext());
+			}
+
+			TupleQuery ptq = connection
+					.prepareTupleQuery("SELECT (COUNT(?s) AS ?c) WHERE {?s a <" + RDF.NAMESPACE + "Alt>}");
+			try (TupleQueryResult evaluate = ptq.evaluate()) {
+				assertTrue(evaluate.hasNext());
+				BindingSet next = evaluate.next();
+				assertNotNull(next);
+				Value value = next.getBinding("c").getValue();
+				assertTrue(value.isLiteral());
+				Literal literal = (Literal) value;
+				assertEquals((end - begin), literal.intValue());
+				assertFalse(evaluate.hasNext());
+			}
 		}
 	}
 

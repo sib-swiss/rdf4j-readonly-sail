@@ -119,7 +119,7 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 		if (rank == WriteOnce.NOT_FOUND) {
 			return null;
 		}
-		long value = present.select(rank);
+		long value = present.select(rank - 1);
 		return reconstructor.apply(value);
 	}
 
