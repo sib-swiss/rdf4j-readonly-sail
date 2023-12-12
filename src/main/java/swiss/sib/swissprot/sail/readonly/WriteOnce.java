@@ -79,6 +79,7 @@ import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedList;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedListInSections;
 import swiss.sib.swissprot.sail.readonly.sorting.Comparators;
 import swiss.sib.swissprot.sail.readonly.storing.TemporaryGraphIdMap;
+import swiss.sib.swissprot.sail.readonly.values.ReadOnlyBlankNode;
 
 public class WriteOnce implements AutoCloseable {
 
@@ -117,6 +118,7 @@ public class WriteOnce implements AutoCloseable {
 	private final Lock predicateSeenLock = new ReentrantLock();
 
 	private final Compression tempCompression;
+	private static final Compression FINAL_COMPRESSION = Compression.LZ4;
 
 	/**
 	 * Error exit codes.

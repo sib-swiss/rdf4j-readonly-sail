@@ -8,8 +8,34 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *******************************************************************************/
-package swiss.sib.swissprot.sail.readonly;
+package swiss.sib.swissprot.sail.readonly.values;
 
-public class ReadOnlyLiteral {
+import org.eclipse.rdf4j.model.BNode;
+
+public class ReadOnlyBlankNode implements BNode {
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+	private final long id;
+
+	public ReadOnlyBlankNode(long id) {
+		super();
+		this.id = id;
+	}
+
+	@Override
+	public String stringValue() {
+		return Long.toString(id);
+	}
+
+	@Override
+	public String getID() {
+		return stringValue();
+	}
+
+	public long id() {
+		return id;
+	}
 
 }

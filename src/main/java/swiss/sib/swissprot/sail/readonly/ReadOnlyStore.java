@@ -33,6 +33,7 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
@@ -52,6 +53,7 @@ import swiss.sib.swissprot.sail.readonly.datastructures.io.SortedLongLongMapViaB
 import swiss.sib.swissprot.sail.readonly.datastructures.io.SortedLongLongMapViaLongBuffersIO;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedList;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedListInSections;
+import swiss.sib.swissprot.sail.readonly.values.ReadOnlyBlankNode;
 import swiss.sib.swissprot.sail.readonly.values.ReadOnlyIRI;
 import swiss.sib.swissprot.sail.readonly.values.ReadOnlyValueFactory;
 
@@ -284,7 +286,14 @@ public class ReadOnlyStore extends AbstractSail {
 		} else if (ok == Kind.LITERAL) {
 			Optional<IRI> dt = ReadOnlyLiteralStore.dataTypeInFile(objectFile);
 			if (dt.isPresent()) {
-				return rols.getLongToValue(dt.get());
+				
+				final IRI dti = dt.get();
+				final CoreDatatype dtc = CoreDatatype.from(dti);
+				if (dtc != null) {
+					return rols.getLongToValue(dtc);
+				} else {
+					return rols.getLongToValue(dti);
+				}
 			}
 		}
 		return null;

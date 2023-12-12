@@ -22,6 +22,7 @@ import java.util.function.LongFunction;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
 
@@ -29,6 +30,7 @@ import swiss.sib.swissprot.sail.readonly.datastructures.list.FitsInLongSortedLis
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedList;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedListInSections;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.FitsInLongSortedList.FitingDatatypes;
+import swiss.sib.swissprot.sail.readonly.values.ReadOnlyCoreLiteral;
 import swiss.sib.swissprot.sail.readonly.values.ReadOnlyLiteral;
 
 public class ReadOnlyLiteralStore {
@@ -169,5 +171,10 @@ public class ReadOnlyLiteralStore {
 	public LongFunction<Value> getLongToValue(IRI dt) {
 		SortedList<Value> sortedList = datatypeStrings.get(dt);
 		return l -> new ReadOnlyLiteral(l, sortedList, dt);
+	}
+	
+	public LongFunction<Value> getLongToValue(CoreDatatype dt) {
+		SortedList<Value> sortedList = datatypeStrings.get(dt.getIri());
+		return l -> new ReadOnlyCoreLiteral(l, sortedList, dt);
 	}
 }

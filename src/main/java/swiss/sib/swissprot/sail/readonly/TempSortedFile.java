@@ -73,6 +73,19 @@ public class TempSortedFile {
 
 	}
 
+	private final record SOGToByteArrayIterator(Iterator<SubjectObjectGraph> sogs) implements Iterator<byte[]> {
+
+		@Override
+		public boolean hasNext() {
+			return sogs.hasNext();
+		}
+
+		@Override
+		public byte[] next() {
+			return sogs.next().subject();
+		}
+	}
+
 	/**
 	 * Exists only because byte[].hashCode is unique per array nor per contents.
 	 *
@@ -344,6 +357,18 @@ public class TempSortedFile {
 
 		};
 	}
+	
+	private final record ByteArrayToObjectValueIterator(Iterator<byte[]> raw, IO objectio) implements Iterator<Value> {
+		@Override
+		public boolean hasNext() {
+			return raw.hasNext();
+		}
+
+		@Override
+		public Value next() {
+			return objectio.read(raw.next());
+		}		
+	}
 
 	public Iterator<byte[]> rawObjectIterator(DataInputStream dis) throws IOException {
 		try {
@@ -418,18 +443,7 @@ public class TempSortedFile {
 	public Iterator<byte[]> rawDistinctSubjectIterator(DataInputStream dis) throws IOException {
 
 		Iterator<SubjectObjectGraph> sogs = iterator(dis);
-		Iterator<byte[]> rawSubjects = new Iterator<>() {
-
-			@Override
-			public boolean hasNext() {
-				return sogs.hasNext();
-			}
-
-			@Override
-			public byte[] next() {
-				return sogs.next().subject();
-			}
-		};
+		Iterator<byte[]> rawSubjects = new SOGToByteArrayIterator(sogs);
 
 		return new ReducingIterator<>(rawSubjects, subjectComparator);
 	}

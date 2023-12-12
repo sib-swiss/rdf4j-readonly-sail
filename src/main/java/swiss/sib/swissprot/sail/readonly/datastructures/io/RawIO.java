@@ -64,7 +64,7 @@ public class RawIO {
 		};
 	}
 
-	private static class IRIIO implements IO {
+	private final static class IRIIO implements IO {
 
 		@Override
 		public int write(DataOutputStream dos, Value v) throws IOException {
@@ -83,7 +83,7 @@ public class RawIO {
 		}
 	}
 
-	private static record LangStringIO(String lang) implements IO {
+	private final static record LangStringIO(String lang) implements IO {
 
 		@Override
 		public int write(DataOutputStream dos, Value v) throws IOException {
@@ -102,7 +102,7 @@ public class RawIO {
 		}
 	}
 
-	private static class BNodeIO implements IO {
+	private final static class BNodeIO implements IO {
 
 		public int write(DataOutputStream dos, byte[] content) throws IOException {
 			assert content.length == Long.BYTES;
@@ -153,7 +153,27 @@ public class RawIO {
 		}
 	}
 
-	private static record DatatypeAsUTF8IO(IRI datatype) implements IO {
+	private final static record DatatypeAsUTF8IO(IRI datatype) implements IO {
+
+		@Override
+		public int write(DataOutputStream dos, Value v) throws IOException {
+			assert v instanceof Literal;
+			byte[] content = v.stringValue().getBytes(StandardCharsets.UTF_8);
+			return write(dos, content);
+		}
+
+		@Override
+		public Value read(byte[] in) {
+			return SVF.createLiteral(new String(in, StandardCharsets.UTF_8), datatype);
+		}
+		
+		@Override
+		public Value read(byte[] in, int offset, int length) {
+			return SVF.createLiteral(new String(in, offset, length, StandardCharsets.UTF_8), datatype);
+		}
+	}
+	
+	private final static record DatatypeAsUTF8IOFromCore(CoreDatatype datatype) implements IO {
 
 		@Override
 		public int write(DataOutputStream dos, Value v) throws IOException {
@@ -173,7 +193,7 @@ public class RawIO {
 		}
 	}
 
-	private static class IntIO implements IO {
+	private final static class IntIO implements IO {
 
 		public int write(DataOutputStream dos, byte[] content) throws IOException {
 			assert content.length == Integer.BYTES;
@@ -221,7 +241,7 @@ public class RawIO {
 
 	}
 
-	private static class LongIO implements IO {
+	private final static class LongIO implements IO {
 
 		public int write(DataOutputStream dos, byte[] content) throws IOException {
 			assert content.length == Long.BYTES;
@@ -268,7 +288,7 @@ public class RawIO {
 		}
 	}
 
-	private static class DoubleIO implements IO {
+	private final static class DoubleIO implements IO {
 
 		public int write(DataOutputStream dos, byte[] content) throws IOException {
 			assert content.length == Double.BYTES;
@@ -315,7 +335,7 @@ public class RawIO {
 		};
 	}
 
-	private static class FloatIO implements IO {
+	private final static class FloatIO implements IO {
 
 		public int write(DataOutputStream dos, byte[] content) throws IOException {
 			assert content.length == Float.BYTES;
@@ -364,20 +384,25 @@ public class RawIO {
 
 	private static IO forDatatype(IRI datatype) {
 		CoreDatatype from = CoreDatatype.from(datatype);
-		if (from != null && from.isXSDDatatype()) {
-			switch (from.asXSDDatatype().get()) {
-			case INT:
-				return new IntIO();
-			case LONG:
-				return new LongIO();
-			case FLOAT:
-				return new FloatIO();
-			case DOUBLE:
-				return new DoubleIO();
-			case STRING:
-				return new DatatypeAsUTF8IO(datatype);
-			default:
-				return new DatatypeAsUTF8IO(datatype);
+		if (from != null)
+		{
+			if (from.isXSDDatatype()) {
+				switch (from.asXSDDatatype().get()) {
+				case INT:
+					return new IntIO();
+				case LONG:
+					return new LongIO();
+				case FLOAT:
+					return new FloatIO();
+				case DOUBLE:
+					return new DoubleIO();
+				case STRING:
+					return new DatatypeAsUTF8IOFromCore(from);
+				default:
+					return new DatatypeAsUTF8IOFromCore(from);
+				}
+			} else {
+				return new DatatypeAsUTF8IOFromCore(from);
 			}
 		}
 		return new DatatypeAsUTF8IO(datatype);
@@ -410,6 +435,7 @@ public class RawIO {
 		case BNODE:
 			return new BNodeIO();
 		case LITERAL:
+			throw new UnsupportedOperationException("Need datatype or lang");
 		case TRIPLE:
 		default:
 			throw new UnsupportedOperationException("No RDF-star support yet");
