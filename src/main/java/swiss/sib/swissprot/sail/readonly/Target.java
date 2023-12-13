@@ -43,8 +43,11 @@ import swiss.sib.swissprot.sail.readonly.WriteOnce.Kind;
 import swiss.sib.swissprot.sail.readonly.storing.TemporaryGraphIdMap;
 
 final class Target implements AutoCloseable {
+	//If we have over three merge levels we are talking about a seriously large dataset.
+	//So the filesystem just needs to be able to accept a lot of files.
+	private static final int MAX_TEMP_MERGE_LEVEL = 3;
 	private final Compression tempCompression;
-	private static final int MERGE_X_FILES = 64;
+	private static final int MERGE_X_FILES = 32;
 	private final int maxTempFiles;
 	private static final Logger logger = LoggerFactory.getLogger(Target.class);
 	protected static final long SWITCH_TO_NEW_FILE = 128l * 1024l * 1024l;
@@ -196,21 +199,29 @@ final class Target implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Merge files in the background into fewer bigger files. Inspired by Lucene
+	 * tiered merging. Stop merging very big files as at some point it is not
+	 * a benefit to keep merging before we hit the last level.
+	 * 
+	 * @throws IOException
+	 */
 	private void mergeIfNeeded() throws IOException {
 		List<Integer> keys = new ArrayList<>(sortedTempFilesByMergeLevel.keySet());
 		for (int level : keys) {
-			try {
-				mergeLock.lock();
-				List<TempSortedFile> list = sortedTempFilesByMergeLevel.get(level);
-				if (list.size() > MERGE_X_FILES && !closed) {
-					mergeFiles(level, newThreadSafeList(list));
-					list.clear();
+			if (level < MAX_TEMP_MERGE_LEVEL) {
+				try {
+					mergeLock.lock();
+					List<TempSortedFile> list = sortedTempFilesByMergeLevel.get(level);
+					if (list.size() > MERGE_X_FILES && !closed) {
+						mergeFiles(level, newThreadSafeList(list));
+						list.clear();
+					}
+				} finally {
+					mergeLock.unlock();
 				}
-			} finally {
-				mergeLock.unlock();
 			}
 		}
-
 	}
 
 	private void mergeFiles(int level, List<TempSortedFile> toMerge) throws IOException {
@@ -228,28 +239,32 @@ final class Target implements AutoCloseable {
 		}
 
 		public IOException call() {
-			try {
-				int nextLevel = level + 1;
-				File firstFile = toMerge.get(0).file();
-				File sortedTempFile = new File(firstFile.getParent(), firstFile.getName() + "-" + nextLevel);
-				TempSortedFile tempSortedFile = new TempSortedFile(sortedTempFile, subjectKind, objectKind, datatype,
-						lang, tempCompression);
-				tempSortedFile.merge(toMerge, null);
-
-				for (TempSortedFile merged : toMerge) {
-					merged.delete();
-				}
+			//If we are closed we are going to merge into the final single file.
+			//Tiered merging now no longer gives a benefit.
+			if (!closed) {
 				try {
-					mergeLock.lock();
-					if (!sortedTempFilesByMergeLevel.containsKey(nextLevel)) {
-						sortedTempFilesByMergeLevel.put(nextLevel, newThreadSafeList());
+					int nextLevel = level + 1;
+					File firstFile = toMerge.get(0).file();
+					File sortedTempFile = new File(firstFile.getParent(), firstFile.getName() + "-" + nextLevel);
+					TempSortedFile tempSortedFile = new TempSortedFile(sortedTempFile, subjectKind, objectKind,
+							datatype, lang, tempCompression);
+					tempSortedFile.merge(toMerge, null);
+
+					for (TempSortedFile merged : toMerge) {
+						merged.delete();
 					}
-					sortedTempFilesByMergeLevel.get(nextLevel).add(tempSortedFile);
-				} finally {
-					mergeLock.unlock();
+					try {
+						mergeLock.lock();
+						if (!sortedTempFilesByMergeLevel.containsKey(nextLevel)) {
+							sortedTempFilesByMergeLevel.put(nextLevel, newThreadSafeList());
+						}
+						sortedTempFilesByMergeLevel.get(nextLevel).add(tempSortedFile);
+					} finally {
+						mergeLock.unlock();
+					}
+				} catch (IOException e) {
+					return e;
 				}
-			} catch (IOException e) {
-				return e;
 			}
 			return null;
 		}
