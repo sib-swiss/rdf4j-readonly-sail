@@ -23,12 +23,19 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 public class Roaring64BitmapAdder {
 	private static final boolean SIGNED_LONGS = true;
 	private static final int TEMP_LONG_ARRAY_SIZE = 1024 * 16;
-
-	public Roaring64BitmapAdder() {
+	private final LongBitmapDataProvider bitmap;
+	private final boolean navigable;
+	public Roaring64BitmapAdder(boolean navigable) {
 		super();
+		this.navigable = navigable;
+		if (navigable) {
+			bitmap = new Roaring64NavigableMap(SIGNED_LONGS);
+		} else {
+			bitmap = new Roaring64Bitmap();
+		}
 	}
 
-	private final Roaring64NavigableMap bitmap = new Roaring64NavigableMap(true);
+	
 	private final long[] listToAdd = new long[TEMP_LONG_ARRAY_SIZE];
 	private int at = 0;
 	private int added;
@@ -46,7 +53,7 @@ public class Roaring64BitmapAdder {
 
 	public LongBitmapDataProvider build() {
 		addToBitmap();
-		bitmap.runOptimize();
+		runOptimize();
 		return bitmap;
 	}
 
@@ -57,7 +64,7 @@ public class Roaring64BitmapAdder {
 			while (from < at) {
 				int monotonicallyIncreasesTill = monotonicallyIncreasesTill(listToAdd, from, at);
 				if (monotonicallyIncreasesTill > from) {
-					bitmap.addRange(listToAdd[from], listToAdd[monotonicallyIncreasesTill] + 1);
+					addRange(from, monotonicallyIncreasesTill);
 					from = monotonicallyIncreasesTill;
 					added++;
 				} else {
@@ -67,9 +74,25 @@ public class Roaring64BitmapAdder {
 				}
 			}
 			if (added > 1_000_000) {
-				bitmap.runOptimize();
+				runOptimize();
 				added = 0;
 			}
+		}
+	}
+
+	private void runOptimize() {
+		if (navigable) {
+			((Roaring64NavigableMap) bitmap).runOptimize();
+		} else {
+			((Roaring64Bitmap) bitmap).runOptimize();
+		}
+	}
+
+	private void addRange(int from, int monotonicallyIncreasesTill) {
+		if (navigable) {
+			((Roaring64NavigableMap) bitmap).addRange(listToAdd[from], listToAdd[monotonicallyIncreasesTill] + 1);
+		} else {
+			((Roaring64Bitmap) bitmap).addRange(listToAdd[from], listToAdd[monotonicallyIncreasesTill] + 1);
 		}
 	}
 
@@ -95,12 +118,12 @@ public class Roaring64BitmapAdder {
 
 	public static void writeLongBitmapDataProvider(ObjectOutputStream dos, LongBitmapDataProvider values)
 			throws IOException {
-		if (values instanceof Roaring64Bitmap) {
+		if (values instanceof Roaring64Bitmap rbm) {
 			dos.writeInt(1);
-			((Roaring64Bitmap) values).writeExternal(dos);
-		} else if (values instanceof Roaring64NavigableMap) {
+			rbm.writeExternal(dos);
+		} else if (values instanceof Roaring64NavigableMap rnm) {
 			dos.writeInt(2);
-			((Roaring64NavigableMap) values).writeExternal(dos);
+			rnm.writeExternal(dos);
 		}
 	}
 

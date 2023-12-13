@@ -13,15 +13,17 @@ package swiss.sib.swissprot.sail.readonly.datastructures.roaringbitmap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.roaringbitmap.longlong.LongBitmapDataProvider;
 import org.roaringbitmap.longlong.LongIterator;
 
 public class Roaring64BitmapAdderTest {
 
-	@Test
-	public void oneToOneMillion() {
-		Roaring64BitmapAdder ad = new Roaring64BitmapAdder();
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	public void oneToOneMillion(boolean navigable) {
+		Roaring64BitmapAdder ad = new Roaring64BitmapAdder(navigable);
 		for (int i = 0; i < 1_000_000; i++) {
 			ad.add(i);
 		}
@@ -34,9 +36,10 @@ public class Roaring64BitmapAdderTest {
 		}
 	}
 
-	@Test
-	public void oneToOneMillionByStep3() {
-		Roaring64BitmapAdder ad = new Roaring64BitmapAdder();
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	public void oneToOneMillionByStep3(boolean navigable) {
+		Roaring64BitmapAdder ad = new Roaring64BitmapAdder(navigable);
 		for (int i = 0; i < 1_000_000; i += 3) {
 			ad.add(i);
 		}
@@ -49,9 +52,10 @@ public class Roaring64BitmapAdderTest {
 		}
 	}
 
-	@Test
-	public void oneToOneMillionWithSpace() {
-		Roaring64BitmapAdder ad = new Roaring64BitmapAdder();
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	public void oneToOneMillionWithSpace(boolean navigable) {
+		Roaring64BitmapAdder ad = new Roaring64BitmapAdder(navigable);
 		for (int i = 0; i < 1_000_000; i += 3) {
 			ad.add(i);
 		}

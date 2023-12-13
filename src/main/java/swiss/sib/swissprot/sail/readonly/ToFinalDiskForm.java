@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -339,8 +340,8 @@ public class ToFinalDiskForm {
 
 			try (FileOutputStream fos = new FileOutputStream(file);
 					BufferedOutputStream bos = new BufferedOutputStream(fos);
-					DataOutputStream out = new DataOutputStream(bos)) {
-				value.serialize(out);
+					ObjectOutputStream out = new ObjectOutputStream(bos)) {
+				Roaring64BitmapAdder.writeLongBitmapDataProvider(out, value);
 			}
 		}
 	}
@@ -404,7 +405,7 @@ public class ToFinalDiskForm {
 			} else {
 				bm = graphBitMaps.get(s);
 				if (bm == null) {
-					bm = new Roaring64BitmapAdder();
+					bm = new Roaring64BitmapAdder(false);
 					graphBitMaps.put(s, bm);
 				}
 				lastBitMap = bm;

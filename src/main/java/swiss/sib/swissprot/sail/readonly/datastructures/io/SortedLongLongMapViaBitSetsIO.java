@@ -323,7 +323,7 @@ public class SortedLongLongMapViaBitSetsIO {
 
 	private static long readIntoBitMapAndGraph(ObjIntConsumer<Long> forGraphs, ObjectOutputStream dos, long at,
 			long objectId, int objectIdIndex, File[] tempFiles, long[] triples) throws IOException {
-		Roaring64BitmapAdder collector = new Roaring64BitmapAdder();
+		Roaring64BitmapAdder collector = new Roaring64BitmapAdder(false);
 		long prevSubject = WriteOnce.NOT_FOUND;
 
 		int arrayIndex = objectIdIndex % tempFiles.length;

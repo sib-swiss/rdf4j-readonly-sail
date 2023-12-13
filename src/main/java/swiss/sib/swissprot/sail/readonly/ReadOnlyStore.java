@@ -11,12 +11,12 @@
 package swiss.sib.swissprot.sail.readonly;
 
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +38,7 @@ import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
 import org.eclipse.rdf4j.sail.helpers.AbstractSail;
+import org.roaringbitmap.longlong.LongBitmapDataProvider;
 import org.roaringbitmap.longlong.Roaring64Bitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ import swiss.sib.swissprot.sail.readonly.datastructures.io.SortedLongLongMapViaB
 import swiss.sib.swissprot.sail.readonly.datastructures.io.SortedLongLongMapViaLongBuffersIO;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedList;
 import swiss.sib.swissprot.sail.readonly.datastructures.list.SortedListInSections;
+import swiss.sib.swissprot.sail.readonly.datastructures.roaringbitmap.Roaring64BitmapAdder;
 import swiss.sib.swissprot.sail.readonly.values.ReadOnlyBlankNode;
 import swiss.sib.swissprot.sail.readonly.values.ReadOnlyIRI;
 import swiss.sib.swissprot.sail.readonly.values.ReadOnlyValueFactory;
@@ -264,10 +266,13 @@ public class ReadOnlyStore extends AbstractSail {
 				IRI graphIri = new ReadOnlyIRI(Long.parseLong(graphFile.getName().split("-")[2]), iris);
 				try (InputStream is = new FileInputStream(graphFile);
 						BufferedInputStream bis = new BufferedInputStream(is);
-						DataInputStream dis = new DataInputStream(bis)) {
-					Roaring64Bitmap rb = new Roaring64Bitmap();
-					rb.deserialize(dis);
-					graphs.put(graphIri, rb);
+						ObjectInputStream dis = new ObjectInputStream(bis)) {
+					final LongBitmapDataProvider readLongBitmapDataProvider = Roaring64BitmapAdder.readLongBitmapDataProvider(dis);
+					if (readLongBitmapDataProvider instanceof Roaring64Bitmap rb) {
+						graphs.put(graphIri, rb);
+					} else {
+						throw new IllegalStateException("Unkown type of RoaringBitmap");
+					}
 				}
 			}
 		}

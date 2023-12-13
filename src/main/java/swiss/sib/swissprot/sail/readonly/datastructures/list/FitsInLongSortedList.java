@@ -156,7 +156,7 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 
 	public static void rewriteValues(Iterator<Value> sortedInput, File valueFile, FitingDatatypes forDatatype)
 			throws FileNotFoundException, IOException {
-		Roaring64BitmapAdder collector = new Roaring64BitmapAdder();
+		Roaring64BitmapAdder collector = new Roaring64BitmapAdder(true);
 		while (sortedInput.hasNext()) {
 			long asLong = forDatatype.deconstructor.applyAsLong((Literal) sortedInput.next());
 			collector.add(asLong);
