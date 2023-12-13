@@ -21,13 +21,14 @@ import org.roaringbitmap.longlong.Roaring64Bitmap;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 public class Roaring64BitmapAdder {
+	private static final boolean SIGNED_LONGS = true;
 	private static final int TEMP_LONG_ARRAY_SIZE = 1024 * 16;
 
 	public Roaring64BitmapAdder() {
 		super();
 	}
 
-	private final Roaring64NavigableMap bitmap = new Roaring64NavigableMap();
+	private final Roaring64NavigableMap bitmap = new Roaring64NavigableMap(true);
 	private final long[] listToAdd = new long[TEMP_LONG_ARRAY_SIZE];
 	private int at = 0;
 	private int added;
@@ -79,7 +80,7 @@ public class Roaring64BitmapAdder {
 			rb = new Roaring64Bitmap();
 			((Roaring64Bitmap) rb).readExternal(bis);
 		} else if (r == 2) {
-			rb = new Roaring64NavigableMap(MutableRoaringBitmap::new);
+			rb = new Roaring64NavigableMap(SIGNED_LONGS, MutableRoaringBitmap::new);
 
 			try {
 				((Roaring64NavigableMap) rb).readExternal(bis);
