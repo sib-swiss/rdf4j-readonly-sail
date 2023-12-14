@@ -16,6 +16,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
@@ -25,6 +26,7 @@ import org.eclipse.rdf4j.model.base.CoreDatatype;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import swiss.sib.swissprot.sail.readonly.WriteOnce.Kind;
+import swiss.sib.swissprot.sail.readonly.values.ByteArrayBackedIRI;
 
 public class RawIO {
 	private static final SimpleValueFactory SVF = SimpleValueFactory.getInstance();
@@ -74,12 +76,12 @@ public class RawIO {
 
 		@Override
 		public IRI read(byte[] content) {
-			return SVF.createIRI(new String(content, StandardCharsets.UTF_8));
+			return new ByteArrayBackedIRI(content);
 		}
 		
 		@Override
 		public IRI read(byte[] content, int offset, int length) {
-			return SVF.createIRI(new String(content, offset, length, StandardCharsets.UTF_8));
+			return new ByteArrayBackedIRI(Arrays.copyOfRange(content, offset, offset + length));
 		}
 	}
 
