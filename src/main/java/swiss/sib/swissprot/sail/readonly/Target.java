@@ -333,6 +333,10 @@ final class Target implements AutoCloseable {
 				faw.close();
 				if (faw.tempFile.length() > 0)
 					running.add(exec.submit(() -> sortTempFile(faw.tempFile)));
+				else if (faw.tempFile.delete())
+				{
+					logger.info("Unused Tempfile removed");
+				}
 			} finally {
 				faw.unlock();
 			}
