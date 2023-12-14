@@ -133,6 +133,25 @@ final class Target implements AutoCloseable {
 		this(template, directory, tgid, Executors.newSingleThreadExecutor(), 1, new Semaphore(1), Compression.LZ4);
 	}
 
+	public static Target reopen(Kind subjectKind, Kind objectKind, String lang, IRI datatype, IRI predicate, File subdirectory, TemporaryGraphIdMap tgid, Compression tempCompression) throws IOException {
+		return new Target(subjectKind, objectKind, lang, datatype, predicate, subdirectory, tgid, tempCompression);
+	}
+
+	private Target(Kind subjectKind, Kind objectKind, String lang, IRI datatype, IRI predicate, File subdirectory, TemporaryGraphIdMap tgid, Compression tempCompression) throws IOException {
+		this.tgid = tgid;
+		this.exec = null;
+		this.maxTempFiles = -1;
+		this.sortPressureLimit = null;
+		this.subjectKind = subjectKind;
+		this.objectKind = objectKind;
+		this.predicate = predicate;
+		this.tempCompression = tempCompression;
+		this.lang = lang;
+		this.datatype = datatype;
+		this.closed = true;
+		this.targetTripleFile = new File(subdirectory, fileNameForTarget(lang, datatype, objectKind) + tempCompression.extension());
+		this.tripleWriters = null;
+	}
 	Target(Statement template, File directory, TemporaryGraphIdMap tgid, ExecutorService exec, int maxTempFiles,
 			Semaphore sortPressureLimit, Compression tempCompression) throws IOException {
 		this.tgid = tgid;

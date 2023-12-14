@@ -134,8 +134,8 @@ public class ToFinalDiskForm {
 	public static SortedList<? extends Value> makeSortedRawDatatypedLiteralList(Iterator<byte[]> sortedInput,
 			File iriFile,
 			IRI datatype) throws IOException, FileNotFoundException {
-		logger.debug("Reading " + iriFile.getName() + " into memory: " + Instant.now(
-		));
+		Instant start = Instant.now();
+		logger.info("Reading " + iriFile.getName() + " into memory: " + start);
 		FitingDatatypes forDatatype = FitsInLongSortedList.FitingDatatypes.forDatatype(datatype);
 		SortedList<? extends Value> ssl;
 		if (forDatatype == null) {
@@ -147,6 +147,7 @@ public class ToFinalDiskForm {
 			ssl = FitsInLongSortedList.readInValues(iriFile, forDatatype);
 		}
 		assert ssl != null;
+		logger.info("Read " + iriFile.getName() + ": "+ssl.size()+" into memory took: " + Duration.between(start, Instant.now()));
 		return ssl;
 	}
 

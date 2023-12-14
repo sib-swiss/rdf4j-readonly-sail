@@ -35,8 +35,8 @@ import swiss.sib.swissprot.sail.readonly.values.ReadOnlyLiteral;
 
 public class ReadOnlyLiteralStore {
 	public static final String LANG = "langString_";
-	private static final String DATATYPE_FN_XSD_PART = "datatype_xsd_";
-	private static final String DATATYPE_FN_PART = "datatype_";
+	public static final String DATATYPE_FN_XSD_PART = "datatype_xsd_";
+	public static final String DATATYPE_FN_PART = "datatype_";
 
 	private final Map<String, SortedList<Value>> langStrings = new HashMap<>();
 	private final Map<IRI, SortedList<Value>> datatypeStrings = new HashMap<>();
@@ -106,12 +106,16 @@ public class ReadOnlyLiteralStore {
 			Optional<IRI> dt = Optional.of(SimpleValueFactory.getInstance().createIRI(XSD.NAMESPACE, ds));
 			return dt;
 		} else {
-			String substring = fileName.substring(fileName.indexOf('_') + 1);
-			byte[] decode = Base64.getDecoder().decode(substring);
-			String decoded = new String(decode, StandardCharsets.UTF_8);
-			decoded = removeSpecialCoding(decoded);
-			return Optional.of(SimpleValueFactory.getInstance().createIRI(decoded));
+			return fileNameToDatatypeIri(fileName);
 		}
+	}
+
+	public static Optional<IRI> fileNameToDatatypeIri(String fileName) {
+		String substring = fileName.substring(fileName.indexOf('_') + 1);
+		byte[] decode = Base64.getDecoder().decode(substring);
+		String decoded = new String(decode, StandardCharsets.UTF_8);
+		decoded = removeSpecialCoding(decoded);
+		return Optional.of(SimpleValueFactory.getInstance().createIRI(decoded));
 	}
 
 	public static Optional<String> langInFile(File dataFile) {

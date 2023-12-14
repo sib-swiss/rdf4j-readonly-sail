@@ -58,6 +58,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.rio.ParserConfig;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
@@ -449,17 +450,81 @@ public class WriteOnce implements AutoCloseable {
 	}
 
 	private void reloadStepOne() throws IOException, FileNotFoundException {
+		logger.info("Reloading data from step 1");
+		Instant start = Instant.now();
 		List<String> ris = Files.readAllLines(predFile.toPath());
 		SimpleValueFactory vf = SimpleValueFactory.getInstance();
 		for (String ri : ris) {
 			predicatesInOrderOfSeen.add(vf.createIRI(ri));
 		}
-		ReadOnlyStore.findExistingPredicateDirectories(directoryToWriteToo, ris, new HashMap<>(), vf);
-		// TODO: restart after step 0;
-		Failures.NOT_DONE_YET.exit();
+		temporaryGraphIdMap = TemporaryGraphIdMap.fromDisk(directoryToWriteToo);
+
+		Map<IRI, File> predicateDirectories = new HashMap<>();
+		Map<IRI, PredicateDirectoryWriter> pdws = new HashMap<>();
+		ReadOnlyStore.findExistingPredicateDirectories(directoryToWriteToo, ris, predicateDirectories, vf);
+		for (Map.Entry<IRI, File> pd : predicateDirectories.entrySet()) {
+
+			PredicateDirectoryWriter pdw = new PredicateDirectoryWriter(pd.getValue(), temporaryGraphIdMap, exec,
+					concurrentTargetFiles, parsePresureLimit, pd.getKey(), tempCompression);
+			pdws.put(pd.getKey(), pdw);
+			for (File td : pd.getValue().listFiles()) {
+				if (td.isDirectory()) {
+					Kind subjectKind = determineKind(td);
+					Kind objectKind = null;
+					String lang = null;
+					IRI datatype = null;
+					for (File tf : td.listFiles()) {
+						if (tf.getName().endsWith("-objects") || td.length() == 0) {
+							break;
+						}
+						if (tf.getName().equals(Kind.IRI.label())) {
+							objectKind = Kind.IRI;
+						} else if (tf.getName().equals(Kind.BNODE.label())) {
+							objectKind = Kind.BNODE;
+						} else if (tf.getName().equals(Kind.TRIPLE.label())) {
+							objectKind = Kind.TRIPLE;
+						} else if (tf.getName().startsWith(ReadOnlyLiteralStore.DATATYPE_FN_XSD_PART)) {
+							objectKind = Kind.LITERAL;
+							int lengthMinusExtension = tf.getName().length() - tempCompression.extension().length();
+							datatype = vf.createIRI(XSD.NAMESPACE, tf.getName().substring(
+									ReadOnlyLiteralStore.DATATYPE_FN_XSD_PART.length(), lengthMinusExtension));
+						} else if (tf.getName().startsWith(ReadOnlyLiteralStore.DATATYPE_FN_PART)) {
+							objectKind = Kind.LITERAL;
+							datatype = ReadOnlyLiteralStore.fileNameToDatatypeIri(tf.getName()).get();
+						} else if (tf.getName().startsWith(ReadOnlyLiteralStore.LANG)) {
+							objectKind = Kind.LITERAL;
+							int lengthMinusExtension = tf.getName().length() - tempCompression.extension().length();
+							lang = tf.getName().substring(ReadOnlyLiteralStore.LANG.length(), lengthMinusExtension);
+						}
+					}
+					if (objectKind != null) {
+						pdw.addTarget(Target.reopen(subjectKind, objectKind, lang, datatype, pd.getKey(), td,
+								temporaryGraphIdMap, tempCompression));
+					}
+				}
+			}
+		}
+		predicatesDirectories.putAll(pdws);
+		logger.info("Reloaded data from step 1 took " + Duration.between(start, Instant.now()));
 	}
 
-	private void stepOne(List<String> lines) throws IOException {
+	private Kind determineKind(File td) {
+		Kind subjectKind = null;
+		switch (td.getName()) {
+		case "iri":
+			subjectKind = Kind.IRI;
+			break;
+		case "bnode":
+			subjectKind = Kind.BNODE;
+			break;
+		case "triple":
+			subjectKind = Kind.TRIPLE;
+			break;
+		}
+		return subjectKind;
+	}
+
+	void stepOne(List<String> lines) throws IOException {
 		Instant start = Instant.now();
 		logger.info("Starting step 1 parsing files into temporary sorted ones");
 		List<Future<IOException>> closers = new ArrayList<>();
@@ -692,6 +757,12 @@ public class WriteOnce implements AutoCloseable {
 
 		public Collection<Target> getTargets() {
 			return targets.values();
+		}
+
+		public void addTarget(Target target) {
+			targets.put(
+					new TargetKey(target.subjectKind(), target.objectKind(), target.getLang(), target.getDatatype()),
+					target);
 		}
 
 		private final File directory;

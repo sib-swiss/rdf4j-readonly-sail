@@ -362,4 +362,15 @@ public class SortedListInSections<T> implements SortedList<T> {
 		int section = (int) (id / SECTION_SIZE);
 		return section;
 	}
+	
+	@Override
+	public long size() {
+		long allButLastSize = sections.size() - 1 * SECTION_SIZE;
+		Iterator<TPosition<T>> iterator = sections.get(sections.size() -1).iterator();
+		while (iterator.hasNext()) {
+			iterator.next();
+			allButLastSize++;
+		}
+		return allButLastSize;
+	}
 }

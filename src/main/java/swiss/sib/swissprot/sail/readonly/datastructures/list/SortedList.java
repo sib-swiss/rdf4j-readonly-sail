@@ -25,4 +25,6 @@ public interface SortedList<T> {
 
 	Function<T, TPosition<T>> searchInOrder() throws IOException;
 
+	long size();
+
 }

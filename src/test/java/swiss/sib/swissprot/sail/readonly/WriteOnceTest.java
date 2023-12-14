@@ -170,6 +170,45 @@ public class WriteOnceTest {
 			assertFalse(iterateStatements.hasNext());
 		}
 	}
+	
+	@Test
+	public void booleanTestInStages() throws IOException {
+		File newFolder = temp.newFolder("db");
+		SimpleValueFactory vf = SimpleValueFactory.getInstance();
+
+		List<Statement> statements = new ArrayList<>();
+		for (int i = 0; i < 1_000; i++) {
+			IRI subject = makeSubject(vf, i);
+			statements.add(vf.createStatement(subject, RDFS.LABEL, vf.createLiteral(true)));
+		}
+		File input = writeTestInput(statements);
+		try (WriteOnce wo = new WriteOnce(newFolder, 0, Compression.LZ4)) {
+			wo.stepOne(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
+		}
+		
+		try (WriteOnce wo = new WriteOnce(newFolder, 2, Compression.LZ4)) {
+			wo.parse(List.of(input.getAbsolutePath() + "\thttp://example.org/graph"));
+		}
+		ReadOnlyStore readOnlyStore = new ReadOnlyStore(newFolder);
+
+		List<Triples> triples = readOnlyStore.getTriples(RDFS.LABEL);
+		assertEquals(1, triples.size());
+		assertEquals(1_000, triples.get(0).size());
+		Iterator<Statement> iterateStatements = triples.get(0).iterateStatements(null, null, null);
+		for (int i = 0; i < 1_000; i++) {
+			assertTrue(iterateStatements.hasNext());
+			assertNotNull(iterateStatements.next());
+		}
+		for (int i = 0; i < 1_000; i++) {
+			IRI subject = makeSubject(vf, i);
+			iterateStatements = triples.get(0).iterateStatements(subject, null, null);
+			assertTrue(iterateStatements.hasNext());
+			Statement next = iterateStatements.next();
+			assertNotNull(next);
+			assertEquals(next.getSubject(), subject);
+			assertFalse(iterateStatements.hasNext());
+		}
+	}
 
 	@Test
 	public void biggerTest() throws IOException {

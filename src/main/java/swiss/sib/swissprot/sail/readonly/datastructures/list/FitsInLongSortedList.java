@@ -168,4 +168,9 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 			Roaring64BitmapAdder.writeLongBitmapDataProvider(dos, values);
 		}
 	}
+
+	@Override
+	public long size() {
+		return present.getLongCardinality();
+	}
 }
