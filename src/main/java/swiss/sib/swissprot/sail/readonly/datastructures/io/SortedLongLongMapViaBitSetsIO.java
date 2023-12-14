@@ -298,6 +298,7 @@ public class SortedLongLongMapViaBitSetsIO {
 	private static void writeSubjectBitmap(File[] tempFiles, ObjIntConsumer<Long> forGraphs, long[] objectIdsArray,
 			ObjectOutputStream dos, long[] triples) throws IOException, FileNotFoundException {
 
+		logger.info("Will rewrite " + objectIdsArray.length + " different objects into bitmaps");
 		long at = 0;
 		for (int i = 0; i < objectIdsArray.length; i++) {
 			long objectId = objectIdsArray[i];
