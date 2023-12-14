@@ -19,12 +19,14 @@ import org.roaringbitmap.buffer.MutableRoaringBitmap;
 import org.roaringbitmap.longlong.LongBitmapDataProvider;
 import org.roaringbitmap.longlong.Roaring64Bitmap;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.LoggerFactory;
 
 public class Roaring64BitmapAdder {
 	private static final boolean SIGNED_LONGS = true;
 	private static final int TEMP_LONG_ARRAY_SIZE = 1024 * 16;
 	private final LongBitmapDataProvider bitmap;
 	private final boolean navigable;
+
 	public Roaring64BitmapAdder(boolean navigable) {
 		super();
 		this.navigable = navigable;
@@ -35,7 +37,6 @@ public class Roaring64BitmapAdder {
 		}
 	}
 
-	
 	private final long[] listToAdd = new long[TEMP_LONG_ARRAY_SIZE];
 	private int at = 0;
 	private int added;
@@ -60,6 +61,7 @@ public class Roaring64BitmapAdder {
 	private void addToBitmap() {
 		if (at > 0) {
 			Arrays.sort(listToAdd, 0, at);
+			int loop = 0;
 			int from = 0;
 			while (from < at) {
 				int monotonicallyIncreasesTill = monotonicallyIncreasesTill(listToAdd, from, at);
@@ -72,6 +74,10 @@ public class Roaring64BitmapAdder {
 					bitmap.addLong(listToAdd[from++]);
 					added++;
 				}
+				if (loop > listToAdd.length) {
+					LoggerFactory.getLogger(getClass()).error("Loop should have terminated already at:" + at + " , from:" + from);
+				}
+				loop++;
 			}
 			if (added > 1_000_000) {
 				runOptimize();
@@ -131,7 +137,8 @@ public class Roaring64BitmapAdder {
 	 * Any monotonically increasing range should be in here
 	 *
 	 * @param temps the sorted list of temorary values (sorted till the at value)
-	 * @param from  the point to start checking if we have a monotincally increasing values in the temp array
+	 * @param from  the point to start checking if we have a monotincally increasing
+	 *              values in the temp array
 	 * @param at    the last filled value in the temp array
 	 * @return the value of from if there is not mononotic increase
 	 */
