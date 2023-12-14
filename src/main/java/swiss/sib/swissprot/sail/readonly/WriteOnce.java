@@ -142,6 +142,7 @@ public class WriteOnce implements AutoCloseable {
 		super();
 		this.directoryToWriteToo = directoryToWriteToo;
 		this.tempCompression = tempCompression;
+		logger.debug("Temporary compressor = " + tempCompression.name());
 		if (!directoryToWriteToo.exists()) {
 			directoryToWriteToo.mkdirs();
 		}
@@ -235,9 +236,9 @@ public class WriteOnce implements AutoCloseable {
 
 	private static void parse(WriteOnce wo, IRI graph, String fileName, Optional<RDFFormat> parserFormatForFileName)
 			throws IOException {
-		
+
 		RDFParser parser = Rio.createParser(parserFormatForFileName.get(), SimpleValueFactory.getInstance());
-	
+
 		ParserConfig pc = parser.getParserConfig();
 		pc.set(XMLParserSettings.FAIL_ON_DUPLICATE_RDF_ID, false);
 		pc.set(XMLParserSettings.FAIL_ON_INVALID_QNAME, false);
@@ -246,7 +247,7 @@ public class WriteOnce implements AutoCloseable {
 		// TODO support rdf-star.
 		pc.set(BasicParserSettings.PROCESS_ENCODED_RDF_STAR, false);
 		pc.setNonFatalErrors(Set.of(XMLParserSettings.FAIL_ON_DUPLICATE_RDF_ID));
-		
+
 		try {
 			Instant start = Instant.now();
 			logger.info("Starting parsing of " + fileName + " at " + start);
