@@ -19,7 +19,13 @@ Make a tab delimeted file with two columns.
 ```bash
 file_tsv_loadfile_graph=${a_tsv_with_two_columns_file_to_load_and_graph}
 directory=${directory_where_sail_data_will_be_stored}
-java -jar target/sail-readonly-0.0.3-SNAPSHOT-uber.jar
+stage=${zero_to_five_inclusive_can_be_used_to_restart_after_failure}
+temporaryCompressionAlgo=${'.lz4' or '.none'}
+java -jar target/sail-readonly-0.0.4-SNAPSHOT-uber.jar \ 
+   $file_tsv_loadfile_graph \
+   $directory \
+   $stage \
+   $temporaryCompressionAlgo 
 ```
 
 # Setting up your machine
@@ -28,8 +34,9 @@ During loading a lot of files are opened concurrently.
 Limits to the maximum number of open files should be quite high.
 At least 2 times the number of predicates multiplied by the number of expected datatypes.
 The memory overhead during building of the index is per predicate * cpu.
-Which is very noticable during e.g. wikidata indexing where there are many more predicates
-than the UniProtKB case.
+Which is very noticable during e.g. wikidata indexing where there are many more predicates than the UniProtKB case.
+
+For wikidata loading a compressing filesystem such as ZFS is recommended. In which case use the '.none' temporary compression algorithm.
 
 # Querying
 
@@ -44,6 +51,10 @@ sorted lists compressed and memory mapped and all keys are therefore
 just index position values. These keys are valid for comparison
 operators e.g. key 1 value "a" key 2 value "b" and key comparison
 (Long.compare) would match SPARQL value comparison.
+
+If all values in a store can be encoded in 64bits then we use this
+to further compress this data. We use a bitmap to make sure the store knows
+which of the possible values are actually used in the store.
 
 ## Partioned triple tables, with graph filters
 
@@ -75,8 +86,7 @@ compression) and there might be multiple graph bitsets per table.
 All graphs must be identified by an IRI.
 
 ## Inverted indexes using bitsets
-Many values can be stored complet
-ely inline in such a representation
+Many values can be stored completely inline in such a representation
 and we also do inversion of the table. e.g. very valuable for when there
 is a small set of distinct objects. e.g. for a with boolean values
 
@@ -112,6 +122,10 @@ in some cases also be possible.
 # D-entailment/non valid literals
 
 This store always stores a value in the smallest possible representation. And literals that do not match the datatype decleration throw an exception. e.g. `"S"^^xsd:int` is not accepted.
+
+# BNode identifiers
+
+All bnodes identifiers are transformed into distinct long identifiers and the previous string value of the bnode identifiers are dropped. If bnodes in different files need to be merged one will need to preprocess the data to achieve this result.
 
 ## Open work
 
