@@ -80,6 +80,10 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 		}
 	}
 
+	/**
+	 * Basically the rank of the element.
+	 * @return the rank of the element in the list
+	 */
 	public long positionOf(Value element) throws IOException {
 		if (element instanceof Literal) {
 			long asLong = deconstructor.applyAsLong((Literal) element);
@@ -91,6 +95,9 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 
 	}
 
+	/**
+	 * We can iterate over all the values of this type in the store.
+	 */
 	public IterateInSortedOrder<Value> iterator() throws IOException {
 		// This is in order by default so we use it
 		final LongIterator longIterator = present.getLongIterator();
@@ -115,6 +122,9 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 		};
 	}
 
+	/**
+	 * @param rank normally a positive value that should be in range of the store.
+	 */
 	public Literal get(long rank) {
 		if (rank == WriteOnce.NOT_FOUND) {
 			return null;
@@ -123,6 +133,10 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 		return reconstructor.apply(value);
 	}
 
+	/**
+	 * @return a function that can be used to search knowing that we can use to search values
+	 * in order. Used during rewriting into final disk forms
+	 */
 	@Override
 	public Function<Value, TPosition<Value>> searchInOrder() throws IOException {
 		return new Function<>() {
@@ -145,6 +159,15 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 		};
 	}
 
+	/**
+	 * Read in the values from  a serialization on disk
+	 * 
+	 * @param file the file having the data
+	 * @param datatype this needs to match the file
+	 * @return the sorted list with all values
+	 * @throws FileNotFoundException if the file does not exist
+	 * @throws IOException in case of IO issues
+	 */
 	public static SortedList<Value> readInValues(File file, FitingDatatypes datatype)
 			throws FileNotFoundException, IOException {
 		try (FileInputStream fis = new FileInputStream(file); ObjectInputStream bis = new ObjectInputStream(fis)) {
@@ -154,6 +177,15 @@ public record FitsInLongSortedList(LongFunction<Literal> reconstructor, ToLongFu
 		}
 	}
 
+	/**
+	 * Write the values into a file.
+	 * 
+	 * @param sortedInput that needs to be written.
+	 * @param valueFile the file that will be written into.
+	 * @param forDatatype used to turn the data.
+	 * @throws FileNotFoundException if the file does not exist
+	 * @throws IOException in case of IO issues
+	 */
 	public static void rewriteValues(Iterator<Value> sortedInput, File valueFile, FitingDatatypes forDatatype)
 			throws FileNotFoundException, IOException {
 		Roaring64BitmapAdder collector = new Roaring64BitmapAdder(true);

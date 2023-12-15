@@ -28,21 +28,35 @@ import swiss.sib.swissprot.sail.readonly.WriteOnce.Kind;
 import swiss.sib.swissprot.sail.readonly.datastructures.io.RawIO;
 import swiss.sib.swissprot.sail.readonly.datastructures.io.RawIO.IO;
 
+/**
+ * A set of comparator functions that are SPARQL value comparisons equivalent but
+ * work on a lower level byte[] representations.
+ */
 public class Comparators {
 
 	private static final IO IRIIO = RawIO.forOutput(Kind.IRI);
 	private static final ValueComparator VC = new ValueComparator();
 	private static final Comparator<byte[]> IRI_COMPARATOR_BYTES = forIRIBytes();
 	private static final Comparator<IRI> IRI_COMPARATOR = (a, b) -> {
-		byte[] ab = IRIIO.getBytes(a);
-		byte[] bb = IRIIO.getBytes(b);
+		byte[] ab = getBytes(a);
+		byte[] bb = getBytes(b);
 		return IRI_COMPARATOR_BYTES.compare(ab, bb);
 	};
+
+	private static byte[] getBytes(IRI a) {
+		return IRIIO.getBytes(a);
+	}
 
 	private Comparators() {
 
 	}
 
+	/**
+	 * Retrieve a comparator for the byte[] representation of for a datatype used in the store. 
+	 * 
+	 * @param datatype for the values that will be compared.
+	 * @return a Comparator
+	 */
 	public static Comparator<byte[]> forRawBytesOfDatatype(IRI datatype) {
 		CoreDatatype from = CoreDatatype.from(datatype);
 		if (from != null && from.isXSDDatatype()) {
@@ -148,6 +162,13 @@ public class Comparators {
 		};
 	}
 
+	/**
+	 * For a given kind of value and if a literal the datatype or long give a valid comparator.
+	 * @param kind of value
+	 * @param datatype if a literal
+	 * @param lang else a lang if a literal (exclusive with datatype)
+	 * @return the Comparator
+	 */
 	public static Comparator<byte[]> byteComparatorFor(Kind kind, IRI datatype, String lang) {
 		switch (kind) {
 		case IRI:
@@ -167,6 +188,11 @@ public class Comparators {
 		}
 	}
 
+	/**
+	 * For a given kind of value
+	 * @param kind of value
+	 * @return the Comparator
+	 */
 	public static Comparator<byte[]> byteComparatorFor(Kind kind) {
 		switch (kind) {
 		case IRI:

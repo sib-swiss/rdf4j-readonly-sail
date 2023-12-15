@@ -99,7 +99,7 @@ public record ReadOnlyFloat(float value) implements Literal, ReadOnlyValue {
 
 	@Override
 	public XMLGregorianCalendar calendarValue() {
-		throw new IllegalArgumentException("long is not a calendar");
+		throw new IllegalArgumentException("float is not a calendar");
 	}
 
 	@Override

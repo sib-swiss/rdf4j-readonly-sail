@@ -41,6 +41,11 @@ public class Roaring64BitmapAdder {
 	private int at = 0;
 	private int added;
 
+	/**
+	 * Adds a long to be added to the final bitset.
+	 * 
+	 * @param toAdd which will be added (set to true)
+	 */
 	public void add(long toAdd) {
 		if (at > 0 && listToAdd[at] == toAdd) {
 			return;
@@ -52,12 +57,19 @@ public class Roaring64BitmapAdder {
 		}
 	}
 
+	/**
+	 * Make the final Roaring64Bitmap or Roaring64Navigablemap
+	 * @return the final run optimized LongBitmapDataProvider
+	 */
 	public LongBitmapDataProvider build() {
 		addToBitmap();
 		runOptimize();
 		return bitmap;
 	}
 
+	/**
+	 * Try to be as efficient possible with adding values.
+	 */
 	private void addToBitmap() {
 		if (at > 0) {
 			Arrays.sort(listToAdd, 0, at);
@@ -102,17 +114,24 @@ public class Roaring64BitmapAdder {
 		}
 	}
 
-	public static LongBitmapDataProvider readLongBitmapDataProvider(ObjectInputStream bis) throws IOException {
+	/**
+	 * Read either the Roaring64Bitmap or Roaring64Navigablemap
+	 * 
+	 * @param ois the stream to read from.
+	 * @return a LongBitmapProdider (Roaring64Bitmap or Roaring64Navigablemap)
+	 * @throws IOException in case of io issues.
+	 */
+	public static LongBitmapDataProvider readLongBitmapDataProvider(ObjectInputStream ois) throws IOException {
 		LongBitmapDataProvider rb;
-		int r = bis.readInt();
+		int r = ois.readInt();
 		if (r == 1) {
 			rb = new Roaring64Bitmap();
-			((Roaring64Bitmap) rb).readExternal(bis);
+			((Roaring64Bitmap) rb).readExternal(ois);
 		} else if (r == 2) {
 			rb = new Roaring64NavigableMap(SIGNED_LONGS, MutableRoaringBitmap::new);
 
 			try {
-				((Roaring64NavigableMap) rb).readExternal(bis);
+				((Roaring64NavigableMap) rb).readExternal(ois);
 			} catch (ClassNotFoundException e) {
 				throw new IOException("Serialization error expected a type of known Roaring64 ", e);
 			}
@@ -122,14 +141,21 @@ public class Roaring64BitmapAdder {
 		return rb;
 	}
 
-	public static void writeLongBitmapDataProvider(ObjectOutputStream dos, LongBitmapDataProvider values)
+	/**
+	 * Write out the LongBitmapDataProvider either a Roaring64Bitmap or a Roaring64NavigableMap.
+	 * which does
+	 * @param oos We use java serialization to write this out.
+	 * @param values To serialize.
+	 * @throws IOException if there is an io issue.
+	 */
+	public static void writeLongBitmapDataProvider(ObjectOutputStream oos, LongBitmapDataProvider values)
 			throws IOException {
 		if (values instanceof Roaring64Bitmap rbm) {
-			dos.writeInt(1);
-			rbm.writeExternal(dos);
+			oos.writeInt(1);
+			rbm.writeExternal(oos);
 		} else if (values instanceof Roaring64NavigableMap rnm) {
-			dos.writeInt(2);
-			rnm.writeExternal(dos);
+			oos.writeInt(2);
+			rnm.writeExternal(oos);
 		}
 	}
 
