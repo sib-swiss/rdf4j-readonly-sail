@@ -18,10 +18,18 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+/**
+ * Read in a second background thread to with batching
+ *
+ * @param <T>
+ */
 public final class ThreadSafeSecondIterator<T> implements Iterator<T> {
-	volatile boolean done = false;
+	private static final int BATCH_SIZE = 1024;
+
+	private volatile boolean done = false;
 
 	private Iterator<T> current;
 	private final BlockingQueue<Collection<T>> readBytes = new ArrayBlockingQueue<>(32);
@@ -59,18 +67,22 @@ public final class ThreadSafeSecondIterator<T> implements Iterator<T> {
 	}
 
 	private void readInSecondThread(Iterator<T> from) {
-		List<T> more = new ArrayList<>(1024);
 		while (from.hasNext()) {
-			for (int i = 0; from.hasNext() && i < 1024; i++) {
+			List<T> more = new ArrayList<>(BATCH_SIZE);
+			for (int i = 0; from.hasNext() && i < BATCH_SIZE; i++) {
 				T next = from.next();
 				more.add(next);
 			}
-			try {
-				readBytes.put(more);
-				more = new ArrayList<>(1024);
-			} catch (InterruptedException e1) {
-				Thread.interrupted();
-			}
+			boolean accepted = readBytes.offer(more);
+			while (!accepted) {
+				try {
+					accepted = readBytes.offer(more, 100, TimeUnit.MICROSECONDS);
+				} catch (InterruptedException e) {
+					Thread.interrupted();
+					if (done)
+						return;
+				}
+			}			
 		}
 		done = true;
 	}
