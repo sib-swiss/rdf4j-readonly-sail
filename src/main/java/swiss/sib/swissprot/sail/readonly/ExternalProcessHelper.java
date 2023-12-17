@@ -13,7 +13,6 @@ package swiss.sib.swissprot.sail.readonly;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -55,19 +54,20 @@ public class ExternalProcessHelper {
 
 	public static void waitForFutures(List<Future<IOException>> closers) throws IOException {
 		while (!closers.isEmpty()) {
-			Iterator<Future<IOException>> iter = closers.iterator();
-			while (iter.hasNext()) {
-				Future<IOException> fut = iter.next();
-				try {
-					IOException ioException = fut.get();
-					if (ioException != null)
-						throw ioException;
-					iter.remove();
-				} catch (InterruptedException e) {
-					Thread.interrupted();
-				} catch (ExecutionException e) {
-					throw new RuntimeException(e);
-				}
+			//We remove the last element without using an iterator to avoid
+			//Concurrent Modification exceptions.
+			//In a rare case of merging we may create a new feature in a different thread. 
+			int idx = closers.size() - 1;
+			Future<IOException> fut = closers.get(idx);
+			try {
+				IOException ioException = fut.get();
+				if (ioException != null)
+					throw ioException;
+				closers.remove(idx);
+			} catch (InterruptedException e) {
+				Thread.interrupted();
+			} catch (ExecutionException e) {
+				throw new RuntimeException(e);
 			}
 		}
 	}

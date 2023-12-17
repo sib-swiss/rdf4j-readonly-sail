@@ -232,7 +232,7 @@ final class Target implements AutoCloseable {
 				try {
 					mergeLock.lock();
 					List<TempSortedFile> list = sortedTempFilesByMergeLevel.get(level);
-					if (list.size() > MERGE_X_FILES && !closed) {
+					if (list.size() > MERGE_X_FILES) {
 						mergeFiles(level, newThreadSafeList(list));
 						list.clear();
 					}
