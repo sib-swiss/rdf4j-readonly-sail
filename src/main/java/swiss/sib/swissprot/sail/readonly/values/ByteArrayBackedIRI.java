@@ -19,36 +19,36 @@ import org.eclipse.rdf4j.model.IRI;
  * An IRI implementation backed by a single byte array of UTF_8 encoded
  * characters. 
  */
-public record ByteArrayBackedIRI(byte[] backing) implements IRI {
+public record ByteArrayBackedIRI(byte[] backingArray) implements IRI {
 	private static final byte HASH = (byte) '#';
 	private static final byte SLASH = (byte) '/';
 	private static final byte COLON = (byte) ':';
 
 	@Override
 	public String stringValue() {
-		return new String(backing, StandardCharsets.UTF_8);
+		return new String(backingArray, StandardCharsets.UTF_8);
 	}
 
 	@Override
 	public String getNamespace() {
-		return new String(backing, 0, getLocalNameIndex(), StandardCharsets.UTF_8);
+		return new String(backingArray, 0, getLocalNameIndex(), StandardCharsets.UTF_8);
 	}
 
 	@Override
 	public String getLocalName() {
-		return new String(backing, getLocalNameIndex(), backing.length, StandardCharsets.UTF_8);
+		return new String(backingArray, getLocalNameIndex(), backingArray.length, StandardCharsets.UTF_8);
 	}
 
 	// @See URIUtil class for the source logic
 	private int getLocalNameIndex() {
-		int separatorIdx = indexOf(backing, HASH);
+		int separatorIdx = indexOf(backingArray, HASH);
 
 		if (separatorIdx < 0) {
-			separatorIdx = lastIndexOf(backing, SLASH);
+			separatorIdx = lastIndexOf(backingArray, SLASH);
 		}
 
 		if (separatorIdx < 0) {
-			separatorIdx = lastIndexOf(backing, COLON);
+			separatorIdx = lastIndexOf(backingArray, COLON);
 		}
 
 		if (separatorIdx < 0) {
@@ -91,7 +91,7 @@ public record ByteArrayBackedIRI(byte[] backing) implements IRI {
 		if (this == obj)
 			return true;
 		if (obj instanceof ByteArrayBackedIRI other)
-			return Arrays.equals(backing, other.backing);
+			return Arrays.equals(backingArray, other.backingArray);
 		else if (obj instanceof IRI other)
 			return stringValue().equals(other.stringValue());
 		else {
