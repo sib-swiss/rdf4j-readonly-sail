@@ -365,7 +365,7 @@ public class SortedListInSections<T> implements SortedList<T> {
 	
 	@Override
 	public long size() {
-		long allButLastSize = sections.size() - 1 * SECTION_SIZE;
+		long allButLastSize = (sections.size() - 1) * SECTION_SIZE;
 		Iterator<TPosition<T>> iterator = sections.get(sections.size() -1).iterator();
 		while (iterator.hasNext()) {
 			iterator.next();
