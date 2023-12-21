@@ -258,33 +258,29 @@ final class Target implements AutoCloseable {
 		}
 
 		public IOException call() {
-			//If we are closed we are going to merge into the final single file.
-			//Tiered merging now no longer gives a benefit.
-			if (!closed) {
-				try {
-					int nextLevel = level + 1;
-					File firstFile = toMerge.get(0).file();
-					File sortedTempFile = new File(firstFile.getParent(), firstFile.getName() + "-" + nextLevel);
-					TempSortedFile tempSortedFile = new TempSortedFile(sortedTempFile, subjectKind, objectKind,
-							datatype, lang, tempCompression);
-					tempSortedFile.merge(toMerge, null);
+			try {
+				int nextLevel = level + 1;
+				File firstFile = toMerge.get(0).file();
+				File sortedTempFile = new File(firstFile.getParent(), firstFile.getName() + "-" + nextLevel);
+				TempSortedFile tempSortedFile = new TempSortedFile(sortedTempFile, subjectKind, objectKind,
+						datatype, lang, tempCompression);
+				tempSortedFile.merge(toMerge, null);
 
-					for (TempSortedFile merged : toMerge) {
-						merged.delete();
-					}
-					try {
-						mergeLock.lock();
-						if (!sortedTempFilesByMergeLevel.containsKey(nextLevel)) {
-							sortedTempFilesByMergeLevel.put(nextLevel, newThreadSafeList());
-						}
-						sortedTempFilesByMergeLevel.get(nextLevel).add(tempSortedFile);
-					} finally {
-						mergeLock.unlock();
-					}
-				} catch (IOException e) {
-					return e;
+				for (TempSortedFile merged : toMerge) {
+					merged.delete();
 				}
-			}
+				try {
+					mergeLock.lock();
+					if (!sortedTempFilesByMergeLevel.containsKey(nextLevel)) {
+						sortedTempFilesByMergeLevel.put(nextLevel, newThreadSafeList());
+					}
+					sortedTempFilesByMergeLevel.get(nextLevel).add(tempSortedFile);
+				} finally {
+					mergeLock.unlock();
+				}
+			} catch (IOException e) {
+				return e;
+			}		
 			return null;
 		}
 	}
